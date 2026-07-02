@@ -351,16 +351,22 @@
             const descEl = document.getElementById('product-desc');
             if (descEl) descEl.textContent = product.desc;
             
+            
             // Update Main Image
             const mainImg = document.getElementById('main-image');
-            if (mainImg) mainImg.src = product.image;
+            const imgUrl1 = Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : product.image;
+            if (mainImg) mainImg.src = imgUrl1;
             
             // Update Thumbnails
             const thumbs = document.querySelectorAll('img.thumb-image');
-            thumbs.forEach(thumb => {
-                thumb.src = product.image;
+            thumbs.forEach((thumb, index) => {
+                let tUrl = imgUrl1;
+                if(Array.isArray(product.images) && product.images.length > index) {
+                    tUrl = product.images[index];
+                }
+                thumb.src = tUrl;
             });
-            
+
             // Update breadcrumb
             const breadcrumb = document.querySelector('nav a[href="/product.html"]');
             if(breadcrumb) breadcrumb.textContent = product.name;
