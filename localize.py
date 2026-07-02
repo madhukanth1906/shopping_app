@@ -22,23 +22,12 @@ replacements = {
     r'chiffon dress': 'chiffon saree',
     r'satin slip dress': 'satin saree',
     r'red tiered dress': 'red lehenga',
+    # New additions from screenshot:
+    r'The Seraphina Wrap': 'Banarasi Saree',
+    r'Modern Muse Midi': 'Embroidered Lehenga',
+    r'Aurelia Pleated Gown': 'Chanderi Kurta Set',
+    r'Nocturnal Slip': 'Velvet Lehenga',
 }
-
-# Image URL replacements (replacing Google user content URLs with Unsplash images for Indian clothing)
-image_map = {
-    # Replace various image URLs with these standard Unsplash URLs
-    # Since we can't map exactly which URL is which without complex parsing,
-    # we'll use a round-robin replacement for all googleusercontent images.
-}
-
-unsplash_images = [
-    'https://images.unsplash.com/photo-1610030469983-98e550d61dc0?auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1583391733958-d15f00e96ce0?auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1617267156947-f316bf802118?auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1621315271772-28b1e3eb8cd5?auto=format&fit=crop&q=80'
-]
 
 html_files = ['index.html', 'shop.html', 'product.html', 'cart.html', 'account.html', 'admin.html']
 
@@ -52,16 +41,7 @@ for file in html_files:
     for old, new in replacements.items():
         content = re.sub(old, new, content)
         
-    # Replace all aida-public images with Unsplash images in a round-robin
-    def image_replacer(match):
-        img_url = unsplash_images[image_replacer.counter % len(unsplash_images)]
-        image_replacer.counter += 1
-        return f'src="{img_url}"'
-    image_replacer.counter = 0
-    
-    content = re.sub(r'src="https://lh3.googleusercontent.com/aida-public/[^"]+"', image_replacer, content)
-    
     with open(file, 'w', encoding='utf-8') as f:
         f.write(content)
         
-print("Localization complete.")
+print("Text localization complete. Image URLs retained.")
