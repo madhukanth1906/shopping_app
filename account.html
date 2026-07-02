@@ -93,15 +93,15 @@
 <nav class="fixed top-0 w-full z-50 px-6 md:px-12 py-6 bg-[#fbf9f7]/70 backdrop-blur-md">
 <div class="flex justify-between items-center max-w-[1920px] mx-auto">
 <div class="flex-1 hidden md:flex gap-8 items-center">
-<a class="font-['Manrope'] uppercase tracking-[0.1em] text-xs text-[#303331] hover:text-[#7e572e] transition-colors duration-300" href="#">New Arrivals</a>
-<a class="font-['Manrope'] uppercase tracking-[0.1em] text-xs text-[#303331] hover:text-[#7e572e] transition-colors duration-300" href="#">Shop</a>
-<a class="font-['Manrope'] uppercase tracking-[0.1em] text-xs text-[#303331] hover:text-[#7e572e] transition-colors duration-300" href="#">Collections</a>
+<a class="font-['Manrope'] uppercase tracking-[0.1em] text-xs text-[#303331] hover:text-[#7e572e] transition-colors duration-300" href="/shop.html">New Arrivals</a>
+<a class="font-['Manrope'] uppercase tracking-[0.1em] text-xs text-[#303331] hover:text-[#7e572e] transition-colors duration-300" href="/shop.html">Shop</a>
+<a class="font-['Manrope'] uppercase tracking-[0.1em] text-xs text-[#303331] hover:text-[#7e572e] transition-colors duration-300" href="/shop.html">Collections</a>
 </div>
 <a class="font-['Noto_Serif'] italic text-2xl tracking-tighter text-[#303331] flex-none" href="/">THE ATELIER</a>
 <div class="flex-1 flex justify-end gap-6 items-center">
-<span class="material-symbols-outlined text-[#303331] cursor-pointer hover:scale-95 duration-200">person</span>
-<span class="material-symbols-outlined text-[#303331] cursor-pointer hover:scale-95 duration-200">favorite</span>
-<span class="material-symbols-outlined text-[#303331] cursor-pointer hover:scale-95 duration-200">shopping_bag</span>
+<a href="/account.html"><span class="material-symbols-outlined text-[#303331] cursor-pointer hover:scale-95 duration-200">person</span></a>
+<a href="/shop.html"><span class="material-symbols-outlined text-[#303331] cursor-pointer hover:scale-95 duration-200">favorite</span></a>
+<a href="/cart.html"><span class="material-symbols-outlined text-[#303331] cursor-pointer hover:scale-95 duration-200">shopping_bag</span></a>
 </div>
 </div>
 </nav>
@@ -112,23 +112,23 @@
 <div class="space-y-1">
 <h2 class="font-['Manrope'] uppercase tracking-[0.15em] text-[10px] text-outline mb-6">Account Menu</h2>
 <nav class="flex flex-col gap-2">
-<a class="flex items-center gap-3 px-4 py-3 bg-primary-container text-on-primary-container rounded-lg font-semibold transition-all" href="#">
+<a class="flex items-center gap-3 px-4 py-3 bg-primary-container text-on-primary-container rounded-lg font-semibold transition-all" href="/product.html">
 <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
 <span class="text-sm">Dashboard</span>
 </a>
-<a class="flex items-center gap-3 px-4 py-3 text-on-surface hover:bg-surface-container-low rounded-lg transition-all" href="#">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface hover:bg-surface-container-low rounded-lg transition-all" href="/product.html">
 <span class="material-symbols-outlined">history</span>
 <span class="text-sm">Order History</span>
 </a>
-<a class="flex items-center gap-3 px-4 py-3 text-on-surface hover:bg-surface-container-low rounded-lg transition-all" href="#">
-<span class="material-symbols-outlined">favorite</span>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface hover:bg-surface-container-low rounded-lg transition-all" href="/product.html">
+<a href="/shop.html"><span class="material-symbols-outlined">favorite</span></a>
 <span class="text-sm">Wishlist</span>
 </a>
-<a class="flex items-center gap-3 px-4 py-3 text-on-surface hover:bg-surface-container-low rounded-lg transition-all" href="#">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface hover:bg-surface-container-low rounded-lg transition-all" href="/product.html">
 <span class="material-symbols-outlined">location_on</span>
 <span class="text-sm">Saved Addresses</span>
 </a>
-<a class="flex items-center gap-3 px-4 py-3 text-on-surface hover:bg-surface-container-low rounded-lg transition-all" href="#">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface hover:bg-surface-container-low rounded-lg transition-all" href="/product.html">
 <span class="material-symbols-outlined">settings</span>
 <span class="text-sm">Profile Settings</span>
 </a>
@@ -136,7 +136,7 @@
 </div>
 <div class="mt-auto p-6 bg-surface-container-low rounded-xl">
 <p class="text-xs text-outline mb-2">Need assistance?</p>
-<a class="text-sm font-semibold underline decoration-primary/30 hover:decoration-primary" href="#">Contact Concierge</a>
+<a class="text-sm font-semibold underline decoration-primary/30 hover:decoration-primary" href="/product.html">Contact Concierge</a>
 </div>
 </aside>
 <!-- Canvas Area -->
@@ -150,7 +150,7 @@
 <div class="space-y-6">
 <div class="flex justify-between items-end border-b border-outline-variant/10 pb-4">
 <h3 class="font-['Manrope'] uppercase tracking-widest text-xs font-bold text-on-surface">Recent Orders</h3>
-<a class="text-xs text-secondary font-semibold hover:underline" href="#">View All</a>
+<a class="text-xs text-secondary font-semibold hover:underline" href="/product.html">View All</a>
 </div>
 <div class="bg-surface-container-lowest rounded-xl overflow-hidden">
 <div class="overflow-x-auto no-scrollbar">
@@ -201,7 +201,7 @@
 <div class="aspect-[4/5] overflow-hidden rounded-lg bg-surface-container-low">
 <img alt="Silk midi dress" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="high-end editorial shot of a cream silk midi dress hanging in a minimalist light-filled studio space" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCACuYMWFMTQkWnwJ0u2UTRyWPAoM8wrZU0fe64f2jwts1WSm25InZ9LP8YPh4ggqTFMgVHlnsb8z-SM2Ve1sIEciaDvMX5YZ-I2IqxyUgW6oHgEED9z4O_NxGdn-EXqY3696kVALsVfczC7bvGTVes5hWMIFCapRjwUXArjYlcFCITU9VKz6ocglaXquspZQCt7FFc8HW2plwdQJetVgeGvyk8ZpPYYXK4_ebgpwtAnPBnjo8oSLmiSlM800Lx2cZY0UxIKy6CGMI"/>
 <button class="absolute top-4 right-4 p-2 bg-surface/80 backdrop-blur-sm rounded-full text-on-surface hover:bg-on-surface hover:text-surface transition-all">
-<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<a href="/shop.html"><span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">favorite</span></a>
 </button>
 </div>
 <div class="space-y-1">
@@ -217,7 +217,7 @@
 <div class="aspect-[4/5] overflow-hidden rounded-lg bg-surface-container-low">
 <img alt="Leather bucket bag" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="close-up of a handcrafted cognac leather bucket bag with sculptural gold hardware on a neutral pedestal" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBm2x5mhMKwjdQ91iQsCqvoq0C8OZVoIrnf_bUtXP-_LLOrwKkD2t112ma5_PzBSEhKkL-FNdUO8fZa294KP9qxfWy6CdFDNucm0ElxQq65y7137raE6eaVZ5B9gIRiJetIXNfh1LGuRtxpeqYdrWsy-O9vIq3XRRJAUc83Q71AL8m3ucddDSgn-izzoHFhrzKTOY4rKp9ZuRoH3Bvax_7ohhz6PH3XBLLZQ5LR7U_w-jqssUhoJi4_Aj2RPknHTdt3mI7CP7Cw6s"/>
 <button class="absolute top-4 right-4 p-2 bg-surface/80 backdrop-blur-sm rounded-full text-on-surface hover:bg-on-surface hover:text-surface transition-all">
-<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<a href="/shop.html"><span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">favorite</span></a>
 </button>
 </div>
 <div class="space-y-1">
@@ -273,13 +273,13 @@
 </div>
 <div class="flex flex-col gap-4">
 <h4 class="font-['Manrope'] uppercase tracking-[0.15em] text-[10px] font-bold">About</h4>
-<a class="font-['Manrope'] text-sm text-[#5f5e5e] hover:text-[#303331] transition-all" href="#">Our Story</a>
-<a class="font-['Manrope'] text-sm text-[#5f5e5e] hover:text-[#303331] transition-all" href="#">Sustainability</a>
+<a class="font-['Manrope'] text-sm text-[#5f5e5e] hover:text-[#303331] transition-all" href="/product.html">Our Story</a>
+<a class="font-['Manrope'] text-sm text-[#5f5e5e] hover:text-[#303331] transition-all" href="/product.html">Sustainability</a>
 </div>
 <div class="flex flex-col gap-4">
 <h4 class="font-['Manrope'] uppercase tracking-[0.15em] text-[10px] font-bold">Assistance</h4>
-<a class="font-['Manrope'] text-sm text-[#5f5e5e] hover:text-[#303331] transition-all" href="#">Customer Service</a>
-<a class="font-['Manrope'] text-sm text-[#5f5e5e] hover:text-[#303331] transition-all" href="#">Shipping &amp; Returns</a>
+<a class="font-['Manrope'] text-sm text-[#5f5e5e] hover:text-[#303331] transition-all" href="/product.html">Customer Service</a>
+<a class="font-['Manrope'] text-sm text-[#5f5e5e] hover:text-[#303331] transition-all" href="/product.html">Shipping &amp; Returns</a>
 </div>
 <div class="flex flex-col gap-4">
 <h4 class="font-['Manrope'] uppercase tracking-[0.15em] text-[10px] font-bold">Newsletter</h4>
