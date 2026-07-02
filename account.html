@@ -106,46 +106,71 @@
 </div>
 </nav>
 <!-- Main Content Wrapper -->
-<main class="pt-32 pb-20 px-6 md:px-12 max-w-[1440px] mx-auto flex flex-col md:flex-row gap-12">
-<!-- Sidebar Navigation -->
-<aside class="w-full md:w-64 flex flex-col gap-8">
-<div class="space-y-1">
-<h2 class="font-['Manrope'] uppercase tracking-[0.15em] text-[10px] text-outline mb-6">Account Menu</h2>
-<nav class="flex flex-col gap-2">
-<a class="flex items-center gap-3 px-4 py-3 bg-primary-container text-on-primary-container rounded-lg font-semibold transition-all" href="/product.html">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
-<span class="text-sm">Dashboard</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 text-on-surface hover:bg-surface-container-low rounded-lg transition-all" href="/product.html">
-<span class="material-symbols-outlined">history</span>
-<span class="text-sm">Order History</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 text-on-surface hover:bg-surface-container-low rounded-lg transition-all" href="/product.html">
-<a href="/shop.html"><span class="material-symbols-outlined">favorite</span></a>
-<span class="text-sm">Wishlist</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 text-on-surface hover:bg-surface-container-low rounded-lg transition-all" href="/product.html">
-<span class="material-symbols-outlined">location_on</span>
-<span class="text-sm">Saved Addresses</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 text-on-surface hover:bg-surface-container-low rounded-lg transition-all" href="/product.html">
-<span class="material-symbols-outlined">settings</span>
-<span class="text-sm">Profile Settings</span>
-</a>
-</nav>
-</div>
-<div class="mt-auto p-6 bg-surface-container-low rounded-xl">
-<p class="text-xs text-outline mb-2">Need assistance?</p>
-<a class="text-sm font-semibold underline decoration-primary/30 hover:decoration-primary" href="/product.html">Contact Concierge</a>
-</div>
-</aside>
-<!-- Canvas Area -->
-<section class="flex-1 flex flex-col gap-12">
-<!-- Welcome Header -->
-<div class="space-y-2">
-<h1 class="text-4xl md:text-5xl font-['Noto_Serif'] italic tracking-tight text-on-surface">Welcome back, <span class="font-normal not-italic">Julianne</span></h1>
-<p class="text-on-surface-variant font-['Manrope'] text-sm tracking-wide">Curating your style journey since October 2023.</p>
-</div>
+<main class="pt-32 pb-20 px-6 md:px-12 max-w-[1440px] mx-auto flex flex-col gap-12">
+    
+    <!-- Login View (Shown by default) -->
+    <div id="login-view" class="w-full flex flex-col items-center justify-center min-h-[50vh] text-center space-y-6">
+        <h1 class="text-4xl md:text-5xl font-['Noto_Serif'] italic tracking-tight text-on-surface">Sign In</h1>
+        <p class="text-on-surface-variant font-['Manrope'] text-sm tracking-wide max-w-md mx-auto">
+            Access your curated wishlist, track orders, and manage your preferred shipping details.
+        </p>
+        <button id="btn-google-login" class="flex items-center gap-3 bg-surface-container-low border border-outline/30 px-6 py-3 rounded-full hover:bg-surface-container-high transition-colors text-sm font-semibold">
+            <svg class="w-5 h-5" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            Sign in with Google
+        </button>
+    </div>
+
+    <!-- Dashboard View (Hidden by default) -->
+    <div id="dashboard-view" class="w-full hidden flex-col md:flex-row gap-12">
+        <!-- Sidebar Navigation -->
+        <aside class="w-full md:w-64 flex flex-col gap-8">
+            <div class="space-y-1">
+                <h2 class="font-['Manrope'] uppercase tracking-[0.15em] text-[10px] text-outline mb-6">Account Menu</h2>
+                <nav class="flex flex-col gap-2">
+                    <a class="flex items-center gap-3 px-4 py-3 bg-primary-container text-on-primary-container rounded-lg font-semibold transition-all" href="/product.html">
+                        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+                        <span class="text-sm">Dashboard</span>
+                    </a>
+                    <a class="flex items-center gap-3 px-4 py-3 text-on-surface hover:bg-surface-container-low rounded-lg transition-all" href="/product.html">
+                        <span class="material-symbols-outlined">history</span>
+                        <span class="text-sm">Order History</span>
+                    </a>
+                    <a class="flex items-center gap-3 px-4 py-3 text-on-surface hover:bg-surface-container-low rounded-lg transition-all" href="/product.html">
+                        <a href="/shop.html"><span class="material-symbols-outlined">favorite</span></a>
+                        <span class="text-sm">Wishlist</span>
+                    </a>
+                    <a class="flex items-center gap-3 px-4 py-3 text-on-surface hover:bg-surface-container-low rounded-lg transition-all" href="/product.html">
+                        <span class="material-symbols-outlined">location_on</span>
+                        <span class="text-sm">Saved Addresses</span>
+                    </a>
+                    <a class="flex items-center gap-3 px-4 py-3 text-on-surface hover:bg-surface-container-low rounded-lg transition-all" href="/product.html">
+                        <span class="material-symbols-outlined">settings</span>
+                        <span class="text-sm">Profile Settings</span>
+                    </a>
+                    <button id="btn-logout" class="flex items-center gap-3 px-4 py-3 text-error hover:bg-error-container/20 rounded-lg transition-all w-full text-left mt-4 border border-error/20">
+                        <span class="material-symbols-outlined">logout</span>
+                        <span class="text-sm">Sign Out</span>
+                    </button>
+                </nav>
+            </div>
+            <div class="mt-auto p-6 bg-surface-container-low rounded-xl">
+                <p class="text-xs text-outline mb-2">Need assistance?</p>
+                <a class="text-sm font-semibold underline decoration-primary/30 hover:decoration-primary" href="/product.html">Contact Concierge</a>
+            </div>
+        </aside>
+        
+        <!-- Canvas Area -->
+        <section class="flex-1 flex flex-col gap-12">
+            <!-- Welcome Header -->
+            <div class="space-y-2">
+                <h1 class="text-4xl md:text-5xl font-['Noto_Serif'] italic tracking-tight text-on-surface">Welcome back, <span id="user-name" class="font-normal not-italic"></span></h1>
+                <p id="user-email" class="text-on-surface-variant font-['Manrope'] text-sm tracking-wide"></p>
+            </div>
 <!-- Recent Orders (List View) -->
 <div class="space-y-6">
 <div class="flex justify-between items-end border-b border-outline-variant/10 pb-4">
@@ -262,8 +287,63 @@
 <button class="text-xs font-bold border-b border-outline-variant hover:border-on-surface transition-all py-1">Manage Cards</button>
 </div>
 </div>
-</section>
+        </section>
+    </div>
 </main>
+<script type="module">
+    import { loginWithGoogle, logout, getCurrentUser } from './src/lib/auth.js';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        const loginView = document.getElementById('login-view');
+        const dashboardView = document.getElementById('dashboard-view');
+        const userNameSpan = document.getElementById('user-name');
+        const userEmailP = document.getElementById('user-email');
+
+        // Check if there's an error in URL from auth callback
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('error') === 'login_failed') {
+            alert('Failed to login with Google.');
+        }
+
+        // Fetch current session
+        const user = await getCurrentUser();
+
+        if (user) {
+            // Show Dashboard
+            loginView.classList.add('hidden');
+            dashboardView.classList.remove('hidden');
+            dashboardView.classList.add('flex'); // Because it uses flex layout when visible
+            
+            // Set user details
+            userNameSpan.textContent = user.name || 'User';
+            userEmailP.textContent = user.email || '';
+            
+            // Allow admin access directly from account
+            if (user.email === 'madhu9940984501@gmail.com') {
+                const adminLink = document.createElement('a');
+                adminLink.className = 'flex items-center gap-3 px-4 py-3 text-secondary hover:bg-secondary-container/30 rounded-lg font-bold transition-all mt-4 border border-secondary/30';
+                adminLink.href = '/admin.html';
+                adminLink.innerHTML = '<span class="material-symbols-outlined">admin_panel_settings</span><span class="text-sm">Admin Dashboard</span>';
+                document.querySelector('nav').insertBefore(adminLink, document.getElementById('btn-logout'));
+            }
+        } else {
+            // Show Login
+            dashboardView.classList.add('hidden');
+            dashboardView.classList.remove('flex');
+            loginView.classList.remove('hidden');
+        }
+
+        // Event Listeners
+        document.getElementById('btn-google-login').addEventListener('click', () => {
+            loginWithGoogle();
+        });
+
+        document.getElementById('btn-logout').addEventListener('click', async () => {
+            await logout();
+            window.location.reload();
+        });
+    });
+</script>
 <!-- Footer -->
 <footer class="w-full pt-20 pb-10 px-6 md:px-12 border-t border-[#303331]/5 bg-[#fbf9f7] dark:bg-[#1a1c1b]">
 <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">

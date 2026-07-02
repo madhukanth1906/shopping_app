@@ -82,12 +82,48 @@
         }
     </script>
 <style>
-        body { font-family: 'Manrope', sans-serif; }
-        .serif { font-family: 'Noto Serif', serif; }
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
+        body { display: none; /* Hide body until auth checks pass */ }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        .serif {
+            font-family: 'Noto Serif', serif;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
+    <script type="module">
+        import { getCurrentUser } from './src/lib/auth.js';
+
+        // Check authentication
+        async function checkAdmin() {
+            const user = await getCurrentUser();
+            if (!user) {
+                // Not logged in
+                window.location.href = '/account.html';
+                return;
+            }
+            
+            if (user.email !== 'madhu9940984501@gmail.com') {
+                // Not the admin
+                alert('Access Denied: You do not have administrator privileges.');
+                window.location.href = '/';
+                return;
+            }
+
+            // User is valid admin, show the dashboard
+            document.body.style.display = 'block';
+        }
+
+        checkAdmin();
+    </script>
 </head>
-<body class="bg-background text-on-background selection:bg-secondary-container">
+<body class="bg-background text-on-background font-['Manrope'] selection:bg-secondary-container">
 <!-- Top Navigation Anchor -->
 <header class="fixed top-0 w-full z-50 px-12 py-6 bg-[#fbf9f7]/70 dark:bg-[#303331]/70 backdrop-blur-md flex justify-between items-center max-w-[1920px] mx-auto">
 <div class="font-['Noto_Serif'] italic text-2xl tracking-tighter text-[#303331] dark:text-[#fbf9f7]">AZHAGII</div>
