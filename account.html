@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Account Dashboard | THE ATELIER</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&amp;family=Manrope:wght@300;400;600;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-dim": "#d8dbd7",
+                    "outline": "#797b78",
+                    "on-error-container": "#742410",
+                    "surface-container-high": "#e8e8e5",
+                    "surface": "#fbf9f7",
+                    "surface-bright": "#fbf9f7",
+                    "inverse-primary": "#ffffff",
+                    "secondary-fixed-dim": "#ffca98",
+                    "secondary-dim": "#704b23",
+                    "surface-container-highest": "#e1e3df",
+                    "on-tertiary-container": "#614a4d",
+                    "on-secondary-fixed": "#5a3811",
+                    "surface-container-low": "#f4f3f1",
+                    "error-container": "#fe8b70",
+                    "on-primary-container": "#525151",
+                    "on-primary-fixed-variant": "#5c5b5b",
+                    "on-background": "#303331",
+                    "tertiary-fixed-dim": "#e9cacd",
+                    "on-primary-fixed": "#403f3f",
+                    "on-surface": "#303331",
+                    "outline-variant": "#b0b2af",
+                    "primary": "#5f5e5e",
+                    "background": "#fbf9f7",
+                    "primary-fixed-dim": "#d6d4d3",
+                    "tertiary-dim": "#644d50",
+                    "on-surface-variant": "#5d605d",
+                    "secondary-container": "#ffdcbd",
+                    "on-tertiary": "#fff7f7",
+                    "tertiary": "#71595c",
+                    "surface-variant": "#e1e3df",
+                    "tertiary-fixed": "#f8d8db",
+                    "inverse-on-surface": "#9d9d9b",
+                    "inverse-surface": "#0d0e0e",
+                    "primary-fixed": "#e5e2e1",
+                    "error-dim": "#5c1202",
+                    "secondary-fixed": "#ffdcbd",
+                    "on-primary": "#faf7f6",
+                    "primary-dim": "#535252",
+                    "on-error": "#fff7f6",
+                    "on-tertiary-fixed-variant": "#6b5457",
+                    "on-tertiary-fixed": "#4d383b",
+                    "on-secondary-fixed-variant": "#7a532a",
+                    "error": "#9e422c",
+                    "secondary": "#7e572e",
+                    "surface-tint": "#5f5e5e",
+                    "on-secondary": "#fff7f4",
+                    "surface-container": "#eeeeeb",
+                    "surface-container-lowest": "#ffffff",
+                    "tertiary-container": "#f8d8db",
+                    "on-secondary-container": "#6f4a22",
+                    "primary-container": "#e5e2e1"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Noto Serif"],
+                    "body": ["Manrope"],
+                    "label": ["Manrope"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Manrope', sans-serif; background-color: #fbf9f7; color: #303331; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
+        .serif-italic { font-family: 'Noto Serif', serif; font-style: italic; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-background min-h-screen">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 px-6 md:px-12 py-6 bg-[#fbf9f7]/70 backdrop-blur-md">
+<div class="flex justify-between items-center max-w-[1920px] mx-auto">
+<div class="flex-1 hidden md:flex gap-8 items-center">
+<a class="font-['Manrope'] uppercase tracking-[0.1em] text-xs text-[#303331] hover:text-[#7e572e] transition-colors duration-300" href="#">New Arrivals</a>
+<a class="font-['Manrope'] uppercase tracking-[0.1em] text-xs text-[#303331] hover:text-[#7e572e] transition-colors duration-300" href="#">Shop</a>
+<a class="font-['Manrope'] uppercase tracking-[0.1em] text-xs text-[#303331] hover:text-[#7e572e] transition-colors duration-300" href="#">Collections</a>
+</div>
+<a class="font-['Noto_Serif'] italic text-2xl tracking-tighter text-[#303331] flex-none" href="/">THE ATELIER</a>
+<div class="flex-1 flex justify-end gap-6 items-center">
+<span class="material-symbols-outlined text-[#303331] cursor-pointer hover:scale-95 duration-200">person</span>
+<span class="material-symbols-outlined text-[#303331] cursor-pointer hover:scale-95 duration-200">favorite</span>
+<span class="material-symbols-outlined text-[#303331] cursor-pointer hover:scale-95 duration-200">shopping_bag</span>
+</div>
+</div>
+</nav>
+<!-- Main Content Wrapper -->
+<main class="pt-32 pb-20 px-6 md:px-12 max-w-[1440px] mx-auto flex flex-col md:flex-row gap-12">
+<!-- Sidebar Navigation -->
+<aside class="w-full md:w-64 flex flex-col gap-8">
+<div class="space-y-1">
+<h2 class="font-['Manrope'] uppercase tracking-[0.15em] text-[10px] text-outline mb-6">Account Menu</h2>
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 px-4 py-3 bg-primary-container text-on-primary-container rounded-lg font-semibold transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="text-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface hover:bg-surface-container-low rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="text-sm">Order History</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface hover:bg-surface-container-low rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">favorite</span>
+<span class="text-sm">Wishlist</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface hover:bg-surface-container-low rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">location_on</span>
+<span class="text-sm">Saved Addresses</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface hover:bg-surface-container-low rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm">Profile Settings</span>
+</a>
+</nav>
+</div>
+<div class="mt-auto p-6 bg-surface-container-low rounded-xl">
+<p class="text-xs text-outline mb-2">Need assistance?</p>
+<a class="text-sm font-semibold underline decoration-primary/30 hover:decoration-primary" href="#">Contact Concierge</a>
+</div>
+</aside>
+<!-- Canvas Area -->
+<section class="flex-1 flex flex-col gap-12">
+<!-- Welcome Header -->
+<div class="space-y-2">
+<h1 class="text-4xl md:text-5xl font-['Noto_Serif'] italic tracking-tight text-on-surface">Welcome back, <span class="font-normal not-italic">Julianne</span></h1>
+<p class="text-on-surface-variant font-['Manrope'] text-sm tracking-wide">Curating your style journey since October 2023.</p>
+</div>
+<!-- Recent Orders (List View) -->
+<div class="space-y-6">
+<div class="flex justify-between items-end border-b border-outline-variant/10 pb-4">
+<h3 class="font-['Manrope'] uppercase tracking-widest text-xs font-bold text-on-surface">Recent Orders</h3>
+<a class="text-xs text-secondary font-semibold hover:underline" href="#">View All</a>
+</div>
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden">
+<div class="overflow-x-auto no-scrollbar">
+<table class="w-full text-left">
+<thead>
+<tr class="text-[10px] uppercase tracking-widest text-outline bg-surface-container-low/50">
+<th class="px-6 py-4 font-medium">Order ID</th>
+<th class="px-6 py-4 font-medium">Date</th>
+<th class="px-6 py-4 font-medium">Status</th>
+<th class="px-6 py-4 font-medium text-right">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/5">
+<tr class="text-sm hover:bg-surface-container-low/20 transition-colors">
+<td class="px-6 py-5 font-['Noto_Serif'] font-bold">#AT-82910</td>
+<td class="px-6 py-5 text-on-surface-variant">March 14, 2024</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-secondary-container text-on-secondary-container">IN TRANSIT</span>
+</td>
+<td class="px-6 py-5 text-right">
+<button class="text-xs font-bold uppercase tracking-tighter text-on-surface border-b border-on-surface/20 hover:border-on-surface pb-0.5 transition-all">Track Order</button>
+</td>
+</tr>
+<tr class="text-sm hover:bg-surface-container-low/20 transition-colors">
+<td class="px-6 py-5 font-['Noto_Serif'] font-bold">#AT-71022</td>
+<td class="px-6 py-5 text-on-surface-variant">February 28, 2024</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-surface-container-high text-on-surface-variant">DELIVERED</span>
+</td>
+<td class="px-6 py-5 text-right">
+<button class="text-xs font-bold uppercase tracking-tighter text-on-surface border-b border-on-surface/20 hover:border-on-surface pb-0.5 transition-all">Details</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- Wishlist (Bento/Grid View) -->
+<div class="space-y-6">
+<div class="flex justify-between items-end border-b border-outline-variant/10 pb-4">
+<h3 class="font-['Manrope'] uppercase tracking-widest text-xs font-bold text-on-surface">Curated Wishlist</h3>
+<span class="text-[10px] text-outline">4 ITEMS SAVED</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<!-- Wishlist Item 1 -->
+<div class="group relative flex flex-col gap-4">
+<div class="aspect-[4/5] overflow-hidden rounded-lg bg-surface-container-low">
+<img alt="Silk midi dress" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="high-end editorial shot of a cream silk midi dress hanging in a minimalist light-filled studio space" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCACuYMWFMTQkWnwJ0u2UTRyWPAoM8wrZU0fe64f2jwts1WSm25InZ9LP8YPh4ggqTFMgVHlnsb8z-SM2Ve1sIEciaDvMX5YZ-I2IqxyUgW6oHgEED9z4O_NxGdn-EXqY3696kVALsVfczC7bvGTVes5hWMIFCapRjwUXArjYlcFCITU9VKz6ocglaXquspZQCt7FFc8HW2plwdQJetVgeGvyk8ZpPYYXK4_ebgpwtAnPBnjo8oSLmiSlM800Lx2cZY0UxIKy6CGMI"/>
+<button class="absolute top-4 right-4 p-2 bg-surface/80 backdrop-blur-sm rounded-full text-on-surface hover:bg-on-surface hover:text-surface transition-all">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</button>
+</div>
+<div class="space-y-1">
+<h4 class="font-['Manrope'] uppercase text-[10px] tracking-[0.15em] text-outline">Signature Collection</h4>
+<div class="flex justify-between items-baseline">
+<p class="text-sm font-semibold">The Atelier Silk Slip</p>
+<p class="font-['Noto_Serif'] text-sm italic">$420</p>
+</div>
+</div>
+</div>
+<!-- Wishlist Item 2 -->
+<div class="group relative flex flex-col gap-4">
+<div class="aspect-[4/5] overflow-hidden rounded-lg bg-surface-container-low">
+<img alt="Leather bucket bag" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="close-up of a handcrafted cognac leather bucket bag with sculptural gold hardware on a neutral pedestal" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBm2x5mhMKwjdQ91iQsCqvoq0C8OZVoIrnf_bUtXP-_LLOrwKkD2t112ma5_PzBSEhKkL-FNdUO8fZa294KP9qxfWy6CdFDNucm0ElxQq65y7137raE6eaVZ5B9gIRiJetIXNfh1LGuRtxpeqYdrWsy-O9vIq3XRRJAUc83Q71AL8m3ucddDSgn-izzoHFhrzKTOY4rKp9ZuRoH3Bvax_7ohhz6PH3XBLLZQ5LR7U_w-jqssUhoJi4_Aj2RPknHTdt3mI7CP7Cw6s"/>
+<button class="absolute top-4 right-4 p-2 bg-surface/80 backdrop-blur-sm rounded-full text-on-surface hover:bg-on-surface hover:text-surface transition-all">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</button>
+</div>
+<div class="space-y-1">
+<h4 class="font-['Manrope'] uppercase text-[10px] tracking-[0.15em] text-outline">Accessories</h4>
+<div class="flex justify-between items-baseline">
+<p class="text-sm font-semibold">Sculptural Leather Tote</p>
+<p class="font-['Noto_Serif'] text-sm italic">$890</p>
+</div>
+</div>
+</div>
+<!-- Wishlist Item 3 (Small Promo/Empty-ish slot style) -->
+<div class="group relative flex flex-col gap-4">
+<div class="aspect-[4/5] rounded-lg bg-[#7e572e]/5 border border-dashed border-[#7e572e]/20 flex flex-col items-center justify-center p-8 text-center gap-4">
+<span class="material-symbols-outlined text-4xl text-[#7e572e]/40">add_circle</span>
+<div class="space-y-1">
+<p class="text-xs font-bold uppercase tracking-widest text-[#7e572e]">Add to Moodboard</p>
+<p class="text-[11px] text-outline-variant max-w-[140px]">Keep exploring to find your next statement piece.</p>
+</div>
+<button class="mt-2 text-[10px] uppercase tracking-widest font-bold border-b border-on-surface/10 hover:border-on-surface transition-all">Shop Collections</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Profile Summary Card -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+<div class="p-8 bg-surface-container-low rounded-xl space-y-4">
+<h3 class="font-['Manrope'] uppercase tracking-widest text-[10px] font-bold text-outline">Preferred Shipping</h3>
+<div class="space-y-1">
+<p class="text-sm font-semibold">Julianne Sterling</p>
+<p class="text-sm text-on-surface-variant leading-relaxed">240 Central Park West, Apt 4C<br/>New York, NY 10024</p>
+</div>
+<button class="text-xs font-bold border-b border-outline-variant hover:border-on-surface transition-all py-1">Edit Address</button>
+</div>
+<div class="p-8 bg-surface-container-low rounded-xl space-y-4">
+<h3 class="font-['Manrope'] uppercase tracking-widest text-[10px] font-bold text-outline">Payment Method</h3>
+<div class="flex items-center gap-4">
+<div class="w-12 h-8 bg-on-surface rounded flex items-center justify-center">
+<span class="text-[8px] text-surface font-bold">VISA</span>
+</div>
+<p class="text-sm font-semibold">Ending in •••• 4421</p>
+</div>
+<button class="text-xs font-bold border-b border-outline-variant hover:border-on-surface transition-all py-1">Manage Cards</button>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full pt-20 pb-10 px-6 md:px-12 border-t border-[#303331]/5 bg-[#fbf9f7] dark:bg-[#1a1c1b]">
+<div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
+<div class="col-span-1 md:col-span-1">
+<span class="font-['Noto_Serif'] text-xl mb-4 block text-[#303331] dark:text-[#fbf9f7]">THE ATELIER</span>
+<p class="font-['Manrope'] text-sm text-[#5f5e5e] dark:text-[#7e572e] leading-relaxed">Defining the future of archival fashion through a curated digital lens.</p>
+</div>
+<div class="flex flex-col gap-4">
+<h4 class="font-['Manrope'] uppercase tracking-[0.15em] text-[10px] font-bold">About</h4>
+<a class="font-['Manrope'] text-sm text-[#5f5e5e] hover:text-[#303331] transition-all" href="#">Our Story</a>
+<a class="font-['Manrope'] text-sm text-[#5f5e5e] hover:text-[#303331] transition-all" href="#">Sustainability</a>
+</div>
+<div class="flex flex-col gap-4">
+<h4 class="font-['Manrope'] uppercase tracking-[0.15em] text-[10px] font-bold">Assistance</h4>
+<a class="font-['Manrope'] text-sm text-[#5f5e5e] hover:text-[#303331] transition-all" href="#">Customer Service</a>
+<a class="font-['Manrope'] text-sm text-[#5f5e5e] hover:text-[#303331] transition-all" href="#">Shipping &amp; Returns</a>
+</div>
+<div class="flex flex-col gap-4">
+<h4 class="font-['Manrope'] uppercase tracking-[0.15em] text-[10px] font-bold">Newsletter</h4>
+<div class="flex border-b border-[#303331]/20 py-2">
+<input class="bg-transparent border-none focus:ring-0 text-xs w-full font-['Manrope'] tracking-widest placeholder:text-outline/50" placeholder="ENTER EMAIL" type="email"/>
+<button class="material-symbols-outlined text-sm">arrow_forward</button>
+</div>
+</div>
+</div>
+<div class="max-w-7xl mx-auto mt-20 pt-8 border-t border-[#303331]/5">
+<p class="font-['Manrope'] text-[10px] tracking-widest text-[#5f5e5e] uppercase">© 2024 THE EDITORIAL ATELIER. ALL RIGHTS RESERVED.</p>
+</div>
+</footer>
+</body></html>

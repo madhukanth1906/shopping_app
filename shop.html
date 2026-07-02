@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&amp;family=Manrope:wght@300;400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-dim": "#d8dbd7",
+                    "outline": "#797b78",
+                    "on-error-container": "#742410",
+                    "surface-container-high": "#e8e8e5",
+                    "surface": "#fbf9f7",
+                    "surface-bright": "#fbf9f7",
+                    "inverse-primary": "#ffffff",
+                    "secondary-fixed-dim": "#ffca98",
+                    "secondary-dim": "#704b23",
+                    "surface-container-highest": "#e1e3df",
+                    "on-tertiary-container": "#614a4d",
+                    "on-secondary-fixed": "#5a3811",
+                    "surface-container-low": "#f4f3f1",
+                    "error-container": "#fe8b70",
+                    "on-primary-container": "#525151",
+                    "on-primary-fixed-variant": "#5c5b5b",
+                    "on-background": "#303331",
+                    "tertiary-fixed-dim": "#e9cacd",
+                    "on-primary-fixed": "#403f3f",
+                    "on-surface": "#303331",
+                    "outline-variant": "#b0b2af",
+                    "primary": "#5f5e5e",
+                    "background": "#fbf9f7",
+                    "primary-fixed-dim": "#d6d4d3",
+                    "tertiary-dim": "#644d50",
+                    "on-surface-variant": "#5d605d",
+                    "secondary-container": "#ffdcbd",
+                    "on-tertiary": "#fff7f7",
+                    "tertiary": "#71595c",
+                    "surface-variant": "#e1e3df",
+                    "tertiary-fixed": "#f8d8db",
+                    "inverse-on-surface": "#9d9d9b",
+                    "inverse-surface": "#0d0e0e",
+                    "primary-fixed": "#e5e2e1",
+                    "error-dim": "#5c1202",
+                    "secondary-fixed": "#ffdcbd",
+                    "on-primary": "#faf7f6",
+                    "primary-dim": "#535252",
+                    "on-error": "#fff7f6",
+                    "on-tertiary-fixed-variant": "#6b5457",
+                    "on-tertiary-fixed": "#4d383b",
+                    "on-secondary-fixed-variant": "#7a532a",
+                    "error": "#9e422c",
+                    "secondary": "#7e572e",
+                    "surface-tint": "#5f5e5e",
+                    "on-secondary": "#fff7f4",
+                    "surface-container": "#eeeeeb",
+                    "surface-container-lowest": "#ffffff",
+                    "tertiary-container": "#f8d8db",
+                    "on-secondary-container": "#6f4a22",
+                    "primary-container": "#e5e2e1"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Noto Serif"],
+                    "body": ["Manrope"],
+                    "label": ["Manrope"]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .product-card:hover .quick-shop-overlay {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .product-card .quick-shop-overlay {
+        opacity: 0;
+        transform: translateY(10px);
+        transition: all 0.3s ease-in-out;
+      }
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 4px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #e1e3df;
+        border-radius: 10px;
+      }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body selection:bg-secondary-container selection:text-on-secondary-container">
+<!-- Top Navigation Bar -->
+<nav class="bg-[#fbf9f7]/70 dark:bg-[#303331]/70 backdrop-blur-md fixed top-0 w-full z-50 px-6 md:px-12 py-6 flex justify-between items-center max-w-[1920px] mx-auto transition-all duration-300">
+<div class="flex items-center gap-12">
+<span class="font-['Noto_Serif'] italic text-2xl tracking-tighter text-[#303331] dark:text-[#fbf9f7]">THE ATELIER</span>
+<div class="hidden md:flex gap-8 items-center">
+<a class="font-['Manrope'] uppercase tracking-[0.1em] text-xs text-[#303331] dark:text-[#fbf9f7] hover:text-[#7e572e] transition-colors duration-300" href="#">New Arrivals</a>
+<a class="font-['Manrope'] uppercase tracking-[0.1em] text-xs text-[#5f5e5e] border-b border-[#5f5e5e] pb-1 hover:text-[#7e572e] transition-colors duration-300" href="#">Shop</a>
+<a class="font-['Manrope'] uppercase tracking-[0.1em] text-xs text-[#303331] dark:text-[#fbf9f7] hover:text-[#7e572e] transition-colors duration-300" href="#">Collections</a>
+<a class="font-['Manrope'] uppercase tracking-[0.1em] text-xs text-[#303331] dark:text-[#fbf9f7] hover:text-[#7e572e] transition-colors duration-300" href="#">Editorial</a>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<span class="material-symbols-outlined text-xl cursor-pointer hover:text-secondary transition-colors">person</span>
+<span class="material-symbols-outlined text-xl cursor-pointer hover:text-secondary transition-colors">favorite</span>
+<div class="relative group cursor-pointer">
+<span class="material-symbols-outlined text-xl hover:text-secondary transition-colors">shopping_bag</span>
+<span class="absolute -top-1 -right-1 bg-secondary text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full">2</span>
+</div>
+</div>
+</nav>
+<main class="pt-32 pb-20 px-6 md:px-12 max-w-[1920px] mx-auto">
+<!-- Breadcrumbs -->
+<nav class="flex items-center gap-2 mb-8 font-label text-[10px] uppercase tracking-[0.2em] text-outline">
+<a class="hover:text-on-surface transition-colors" href="#">Home</a>
+<span class="material-symbols-outlined text-[12px]">chevron_right</span>
+<a class="hover:text-on-surface transition-colors" href="#">Shop</a>
+<span class="material-symbols-outlined text-[12px]">chevron_right</span>
+<span class="text-on-surface">Summer Dresses</span>
+</nav>
+<!-- Header Section -->
+<div class="mb-16">
+<h1 class="font-headline text-5xl md:text-7xl italic text-on-surface mb-4">Summer <span class="font-normal not-italic">Refinement</span></h1>
+<p class="font-body text-outline max-w-xl leading-relaxed">Curated silhouettes designed for the discerning minimalist. Each piece in our collection is a testament to timeless craftsmanship and ethereal movement.</p>
+</div>
+<!-- Sorting & Filter Mobile Toggle -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12 border-b border-outline-variant/10 pb-6">
+<div class="flex items-center gap-8">
+<button class="md:hidden flex items-center gap-2 font-label text-xs uppercase tracking-widest text-on-surface">
+<span class="material-symbols-outlined">tune</span> Filters
+                </button>
+<div class="hidden md:flex items-center gap-4 text-xs font-label uppercase tracking-widest text-outline">
+<span>124 Products</span>
+</div>
+</div>
+<div class="flex items-center justify-between md:justify-end gap-12">
+<div class="flex items-center gap-2">
+<label class="font-label text-[10px] uppercase tracking-widest text-outline">Sort By:</label>
+<select class="bg-transparent border-none focus:ring-0 font-label text-xs uppercase tracking-widest cursor-pointer text-on-surface pr-8">
+<option>Newest Arrivals</option>
+<option>Price: Low to High</option>
+<option>Price: High to Low</option>
+<option>Popularity</option>
+</select>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-outline hover:text-on-surface transition-colors">grid_view</button>
+<button class="material-symbols-outlined text-on-surface">view_comfy</button>
+</div>
+</div>
+</div>
+<div class="flex gap-16">
+<!-- Sidebar Filters -->
+<aside class="hidden md:block w-64 flex-shrink-0">
+<div class="space-y-10 sticky top-32">
+<!-- Category -->
+<div>
+<h3 class="font-label text-xs uppercase tracking-[0.2em] text-on-surface font-bold mb-6">Occasion</h3>
+<div class="space-y-3">
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 rounded-sm border-outline-variant text-secondary focus:ring-secondary-container" type="checkbox"/>
+<span class="font-label text-sm text-outline group-hover:text-on-surface transition-colors">Garden Party</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 rounded-sm border-outline-variant text-secondary focus:ring-secondary-container" type="checkbox"/>
+<span class="font-label text-sm text-outline group-hover:text-on-surface transition-colors">Bridal Guest</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 rounded-sm border-outline-variant text-secondary focus:ring-secondary-container" type="checkbox"/>
+<span class="font-label text-sm text-outline group-hover:text-on-surface transition-colors">Summer Soirée</span>
+</label>
+</div>
+</div>
+<!-- Size -->
+<div>
+<h3 class="font-label text-xs uppercase tracking-[0.2em] text-on-surface font-bold mb-6">Size</h3>
+<div class="grid grid-cols-4 gap-2">
+<button class="py-2 text-[10px] border border-outline-variant/30 hover:border-on-surface transition-colors font-label">XS</button>
+<button class="py-2 text-[10px] border border-on-surface bg-on-surface text-white font-label">S</button>
+<button class="py-2 text-[10px] border border-outline-variant/30 hover:border-on-surface transition-colors font-label">M</button>
+<button class="py-2 text-[10px] border border-outline-variant/30 hover:border-on-surface transition-colors font-label">L</button>
+<button class="py-2 text-[10px] border border-outline-variant/30 hover:border-on-surface transition-colors font-label">XL</button>
+</div>
+</div>
+<!-- Colors -->
+<div>
+<h3 class="font-label text-xs uppercase tracking-[0.2em] text-on-surface font-bold mb-6">Color Palette</h3>
+<div class="flex flex-wrap gap-4">
+<button class="w-6 h-6 rounded-full bg-[#f4ece1] border border-outline-variant/20 focus:ring-1 focus:ring-offset-2 focus:ring-on-surface" title="Cream"></button>
+<button class="w-6 h-6 rounded-full bg-[#ead8c7] border border-outline-variant/20" title="Blush"></button>
+<button class="w-6 h-6 rounded-full bg-[#7e572e] border border-outline-variant/20" title="Terra"></button>
+<button class="w-6 h-6 rounded-full bg-[#303331] border border-outline-variant/20" title="Soft Black"></button>
+<button class="w-6 h-6 rounded-full bg-[#ffffff] border border-outline-variant/50" title="Pure White"></button>
+</div>
+</div>
+<!-- Price Range -->
+<div>
+<h3 class="font-label text-xs uppercase tracking-[0.2em] text-on-surface font-bold mb-6">Price</h3>
+<input class="w-full accent-secondary" max="1000" min="0" type="range"/>
+<div class="flex justify-between mt-2 font-label text-[10px] text-outline tracking-wider">
+<span>$0</span>
+<span>$1,000+</span>
+</div>
+</div>
+<!-- Fabric -->
+<div>
+<h3 class="font-label text-xs uppercase tracking-[0.2em] text-on-surface font-bold mb-6">Fabric</h3>
+<div class="space-y-3">
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 rounded-sm border-outline-variant text-secondary focus:ring-secondary-container" type="checkbox"/>
+<span class="font-label text-sm text-outline group-hover:text-on-surface transition-colors">Organic Silk</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 rounded-sm border-outline-variant text-secondary focus:ring-secondary-container" type="checkbox"/>
+<span class="font-label text-sm text-outline group-hover:text-on-surface transition-colors">Linen Blend</span>
+</label>
+</div>
+</div>
+</div>
+</aside>
+<!-- Product Grid -->
+<div class="flex-grow">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-16 gap-x-8">
+<!-- Product Card 1 -->
+<div class="product-card group cursor-pointer">
+<div class="relative aspect-[3/4] mb-6 overflow-hidden bg-surface-container-low rounded-lg">
+<img alt="The Silk Slip" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="Elegant woman wearing a flowing cream silk slip dress in a minimalist sunlit studio with soft shadows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBBnQIY1k_xUciqxBKRWC06k2YELPZAbiOUA2-ZO-AlZueJwnUR5sAo8jGtHd1-_Zw3-nBC7hrPANOzxLO3Vj34D_auXhcAMQYhZuFmCzzz42cnglKDm312f8hkSZlPrGDUA58KWyK6WJnFk7208Fns7C51gJN_8dzmqEFvs_PubcSeB-fAArLkpdAWDpSLTzNKc6ujPaXIE0TKwSIMtjl0Qm4i2evi8z10hh4mBowXOqwJ4kKa4uJe-lqZZHIQmBQOY56TLNGVTHc"/>
+<div class="quick-shop-overlay absolute inset-0 flex items-end p-6 bg-gradient-to-t from-surface/40 to-transparent">
+<button class="w-full py-4 bg-on-surface text-surface font-label text-[10px] uppercase tracking-widest rounded-full hover:bg-secondary transition-colors">Quick Add</button>
+</div>
+<span class="absolute top-4 left-4 font-label text-[10px] uppercase tracking-widest bg-surface/80 backdrop-blur px-3 py-1 text-on-surface">New Arrival</span>
+<button class="absolute top-4 right-4 text-on-surface material-symbols-outlined opacity-0 group-hover:opacity-100 transition-opacity">favorite</button>
+</div>
+<div class="space-y-1">
+<p class="font-label text-[10px] uppercase tracking-widest text-outline">Silk Collection</p>
+<div class="flex justify-between items-baseline">
+<h3 class="font-headline text-lg italic text-on-surface">The Alabaster Slip</h3>
+<span class="font-headline text-sm">$320</span>
+</div>
+</div>
+</div>
+<!-- Product Card 2 -->
+<div class="product-card group cursor-pointer">
+<div class="relative aspect-[3/4] mb-6 overflow-hidden bg-surface-container-low rounded-lg">
+<img alt="Linen Midi" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A woman in a delicate blush pink linen midi dress standing in a neutral interior space with natural lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtfeZCXw4_8Dn0IFUwEFEl_YlJUCApInOzi6yTRVI577MemwfBypk5FrGY6rCEFaBgVTqJPtC2qSbKwuTIU_iJnaav3_O5sIx8g8ROmuu56sQ4XfaPvijMJh8UWF2tid3RjETxv5TK5kKFphMLKbwZSnsohAB5J8TK_5C98A91OYreIYqQctDH21zzQ3zE49AXD8pUCQfWMDKC2o4ApvI3KNAJRZ1_JW7zqAS6GQcXQgT1g5uA79WEb43M7p0Y5S9iFkJ7slv5h7Y"/>
+<div class="quick-shop-overlay absolute inset-0 flex items-end p-6 bg-gradient-to-t from-surface/40 to-transparent">
+<button class="w-full py-4 bg-on-surface text-surface font-label text-[10px] uppercase tracking-widest rounded-full hover:bg-secondary transition-colors">Quick Add</button>
+</div>
+<button class="absolute top-4 right-4 text-on-surface material-symbols-outlined opacity-0 group-hover:opacity-100 transition-opacity">favorite</button>
+</div>
+<div class="space-y-1">
+<p class="font-label text-[10px] uppercase tracking-widest text-outline">Summer Resort</p>
+<div class="flex justify-between items-baseline">
+<h3 class="font-headline text-lg italic text-on-surface">Midi Linen Drape</h3>
+<span class="font-headline text-sm">$285</span>
+</div>
+</div>
+</div>
+<!-- Product Card 3 -->
+<div class="product-card group cursor-pointer">
+<div class="relative aspect-[3/4] mb-6 overflow-hidden bg-surface-container-low rounded-lg">
+<img alt="Cotton Pleat" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="Portrait of a woman wearing a sophisticated dark earthy brown cotton dress with sculptural pleated details" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBThy3GUYPEZ1V2A8B0wQlqMHYEjR6crQWZdfyxkBUmpWHxCbG7snUZwJeV2qQ0yi2Uu0ElYnpZ_ZNPbnc9PK5fcs4eySAGDS4Bb8cuV9xdk3VysJc2lpgIa2Xad8XFSqmnHfgUy7yWmahnt7XXl90HbEN9BtSIf3CJIJLgkfc3VEi4SrZmReDnaCKyaDYfQt2nNY-I_QWat0hdHvza_zKfUGwT9Kx4ZCDNbn2bZ5YRWieW7DP0gQygMoyLI3jhBTZWfWguR4MIR4k"/>
+<div class="quick-shop-overlay absolute inset-0 flex items-end p-6 bg-gradient-to-t from-surface/40 to-transparent">
+<button class="w-full py-4 bg-on-surface text-surface font-label text-[10px] uppercase tracking-widest rounded-full hover:bg-secondary transition-colors">Quick Add</button>
+</div>
+<button class="absolute top-4 right-4 text-on-surface material-symbols-outlined opacity-0 group-hover:opacity-100 transition-opacity">favorite</button>
+</div>
+<div class="space-y-1">
+<p class="font-label text-[10px] uppercase tracking-widest text-outline">Essential Edit</p>
+<div class="flex justify-between items-baseline">
+<h3 class="font-headline text-lg italic text-on-surface">Terra Pleated Column</h3>
+<span class="font-headline text-sm">$410</span>
+</div>
+</div>
+</div>
+<!-- Product Card 4 -->
+<div class="product-card group cursor-pointer">
+<div class="relative aspect-[3/4] mb-6 overflow-hidden bg-surface-container-low rounded-lg">
+<img alt="Embroidered White" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="Editorial shot of a white embroidered sundress hanging on a minimalist rack against a beige textured wall" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA6IanlpsJnC81Y10jFvDns_Sn8F-dqxsKci43xcRGwbpTrOtuDGBgfv1sLYxtTDruLm6C_0HSHs55wFJxGm_lLq-mS-7Lk6zoQDJQYbvlC3L5kVGAFP36akrxlwbCAOF2T5nDdHxhk_uSIq4QH9zEwv3mdPS2kSjoAAwe1p2W5r4GAD-mE5peoDZIb15Z4EKxMhnxpA5gbccmASW8EavUu_dD2qWdrXtpskO8GMOyuM4_3l4Zfph_A02MUAOPoHEj_VKE5VSg_qfI"/>
+<div class="quick-shop-overlay absolute inset-0 flex items-end p-6 bg-gradient-to-t from-surface/40 to-transparent">
+<button class="w-full py-4 bg-on-surface text-surface font-label text-[10px] uppercase tracking-widest rounded-full hover:bg-secondary transition-colors">Quick Add</button>
+</div>
+<button class="absolute top-4 right-4 text-on-surface material-symbols-outlined opacity-0 group-hover:opacity-100 transition-opacity">favorite</button>
+</div>
+<div class="space-y-1">
+<p class="font-label text-[10px] uppercase tracking-widest text-outline">Artisanal Line</p>
+<div class="flex justify-between items-baseline">
+<h3 class="font-headline text-lg italic text-on-surface">The Eyelet Maxi</h3>
+<span class="font-headline text-sm">$550</span>
+</div>
+</div>
+</div>
+<!-- Product Card 5 -->
+<div class="product-card group cursor-pointer">
+<div class="relative aspect-[3/4] mb-6 overflow-hidden bg-surface-container-low rounded-lg">
+<img alt="Linen Shirt Dress" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A woman walking on a beach wearing a light sandy beige oversized linen shirt dress catching the sea breeze" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfTqNWbi1bV878mhbofCYi_52Sp8rALT_DW-yZlf3vHnPKoAgY-6pYkNMXwP-CAZrrRglrOXJhXZ-5j0FAJIlli5ZNlpxJv8xfx3VmeZxm1d0lB0_ar9Qa45wroqxq_5rxyir-Q83cNRRib3ECtJu72a61tjCNxsHnRB_uyPnBLXsLEXZowAbVmHc6JobaA5DP24j3JRI6xZH9CFWXk0eRPemwXE57dciGiI8MjVbMu1hWerIW1wXgQlVajTwjudB4uO-BS2JNcOc"/>
+<div class="quick-shop-overlay absolute inset-0 flex items-end p-6 bg-gradient-to-t from-surface/40 to-transparent">
+<button class="w-full py-4 bg-on-surface text-surface font-label text-[10px] uppercase tracking-widest rounded-full hover:bg-secondary transition-colors">Quick Add</button>
+</div>
+<button class="absolute top-4 right-4 text-on-surface material-symbols-outlined opacity-0 group-hover:opacity-100 transition-opacity">favorite</button>
+</div>
+<div class="space-y-1">
+<p class="font-label text-[10px] uppercase tracking-widest text-outline">Coastal Casual</p>
+<div class="flex justify-between items-baseline">
+<h3 class="font-headline text-lg italic text-on-surface">Oversized Dune Shirt</h3>
+<span class="font-headline text-sm">$195</span>
+</div>
+</div>
+</div>
+<!-- Product Card 6 -->
+<div class="product-card group cursor-pointer">
+<div class="relative aspect-[3/4] mb-6 overflow-hidden bg-surface-container-low rounded-lg">
+<img alt="Evening Lace" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="Dramatic high-fashion photograph of a woman in a black structural gown with delicate lace details" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBBeoyqEBUjmDIQ1WCR1WRL2zCG86RElHyz4WcepQsTF2diGLlb0rV2Wl76jDfEZhKPZQ_clDHIt6Tlv-qUbgBftmJELR0Zrc3H9qhyRZBQTo-SN_D1E-K7oTqkAmCUHq1HNZ2oDzN74Pnc9Whv4Izz7Rn6E-CrPxg_GsJrWqLrLVqjU81Izw1BEHojaIbpzTHP88I86MZqw0WBug8n-di_s44oMYRpql4CSdZWcJ37sbHiFU5xXmsfhlt51hbYWzzXhoRp_aSxAe4"/>
+<div class="quick-shop-overlay absolute inset-0 flex items-end p-6 bg-gradient-to-t from-surface/40 to-transparent">
+<button class="w-full py-4 bg-on-surface text-surface font-label text-[10px] uppercase tracking-widest rounded-full hover:bg-secondary transition-colors">Quick Add</button>
+</div>
+<button class="absolute top-4 right-4 text-on-surface material-symbols-outlined opacity-0 group-hover:opacity-100 transition-opacity">favorite</button>
+</div>
+<div class="space-y-1">
+<p class="font-label text-[10px] uppercase tracking-widest text-outline">Evening Atelier</p>
+<div class="flex justify-between items-baseline">
+<h3 class="font-headline text-lg italic text-on-surface">Nightfall Lace Gown</h3>
+<span class="font-headline text-sm">$790</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Pagination -->
+<div class="mt-24 flex items-center justify-center gap-4">
+<button class="w-10 h-10 flex items-center justify-center text-outline hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined">arrow_back_ios</span>
+</button>
+<div class="flex items-center gap-1">
+<button class="w-10 h-10 font-label text-xs border border-on-surface bg-on-surface text-surface rounded-full">1</button>
+<button class="w-10 h-10 font-label text-xs hover:bg-surface-container-low transition-colors rounded-full text-outline">2</button>
+<button class="w-10 h-10 font-label text-xs hover:bg-surface-container-low transition-colors rounded-full text-outline">3</button>
+<span class="px-2 text-outline">...</span>
+<button class="w-10 h-10 font-label text-xs hover:bg-surface-container-low transition-colors rounded-full text-outline">12</button>
+</div>
+<button class="w-10 h-10 flex items-center justify-center text-outline hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined">arrow_forward_ios</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-[#fbf9f7] dark:bg-[#1a1c1b] w-full pt-20 pb-10 px-12 border-t border-[#303331]/5">
+<div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
+<div>
+<span class="font-['Noto_Serif'] text-xl mb-4 block text-[#303331] dark:text-[#fbf9f7]">THE ATELIER</span>
+<p class="text-[#5f5e5e] dark:text-[#7e572e] font-['Manrope'] text-sm leading-relaxed">Defining modern elegance through curation and craftsmanship. Our studio is dedicated to the art of the perfect silhouette.</p>
+</div>
+<div>
+<h4 class="font-['Manrope'] uppercase tracking-[0.1em] text-xs font-bold mb-6 text-[#303331] dark:text-[#fbf9f7]">Atelier</h4>
+<div class="space-y-4">
+<a class="block font-['Manrope'] text-sm tracking-wide text-[#5f5e5e] dark:text-[#7e572e] hover:text-[#303331] dark:hover:text-white transition-all" href="#">Our Story</a>
+<a class="block font-['Manrope'] text-sm tracking-wide text-[#5f5e5e] dark:text-[#7e572e] hover:text-[#303331] dark:hover:text-white transition-all" href="#">Sustainability</a>
+<a class="block font-['Manrope'] text-sm tracking-wide text-[#5f5e5e] dark:text-[#7e572e] hover:text-[#303331] dark:hover:text-white transition-all" href="#">Editorial</a>
+</div>
+</div>
+<div>
+<h4 class="font-['Manrope'] uppercase tracking-[0.1em] text-xs font-bold mb-6 text-[#303331] dark:text-[#fbf9f7]">Services</h4>
+<div class="space-y-4">
+<a class="block font-['Manrope'] text-sm tracking-wide text-[#5f5e5e] dark:text-[#7e572e] hover:text-[#303331] dark:hover:text-white transition-all" href="#">Customer Service</a>
+<a class="block font-['Manrope'] text-sm tracking-wide text-[#5f5e5e] dark:text-[#7e572e] hover:text-[#303331] dark:hover:text-white transition-all" href="#">Shipping &amp; Returns</a>
+<a class="block font-['Manrope'] text-sm tracking-wide text-[#5f5e5e] dark:text-[#7e572e] hover:text-[#303331] dark:hover:text-white transition-all" href="#">Privacy Policy</a>
+</div>
+</div>
+<div>
+<h4 class="font-['Manrope'] uppercase tracking-[0.1em] text-xs font-bold mb-6 text-[#303331] dark:text-[#fbf9f7]">Join The Atelier</h4>
+<p class="text-[#5f5e5e] font-['Manrope'] text-xs mb-4">Receive invitations to private collection releases.</p>
+<div class="flex border-b border-outline-variant/30 pb-2">
+<input class="bg-transparent border-none focus:ring-0 w-full text-sm font-['Manrope']" placeholder="Email Address" type="email"/>
+<button class="material-symbols-outlined text-[#303331] hover:translate-x-1 transition-transform">arrow_forward</button>
+</div>
+</div>
+</div>
+<div class="mt-20 pt-8 border-t border-outline-variant/10 text-center">
+<span class="font-['Manrope'] text-[10px] tracking-[0.2em] text-[#5f5e5e] uppercase">© 2024 THE EDITORIAL ATELIER. ALL RIGHTS RESERVED.</span>
+</div>
+</footer>
+</body></html>
