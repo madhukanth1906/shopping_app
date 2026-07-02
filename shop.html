@@ -109,7 +109,7 @@
 <!-- Top Navigation Bar -->
 <nav class="bg-[#fbf9f7]/70 dark:bg-[#303331]/70 backdrop-blur-md fixed top-0 w-full z-50 px-6 md:px-12 py-6 flex justify-between items-center max-w-[1920px] mx-auto transition-all duration-300">
 <div class="flex items-center gap-12">
-<a href="/" class="font-['Noto_Serif'] italic text-2xl tracking-tighter text-[#303331] dark:text-[#fbf9f7]">THE ATELIER</a>
+<a href="/" class="font-['Noto_Serif'] italic text-2xl tracking-tighter text-[#303331] dark:text-[#fbf9f7]">AZHAGII</a>
 <div class="hidden md:flex gap-8 items-center">
 <a class="font-['Manrope'] uppercase tracking-[0.1em] text-xs text-[#303331] dark:text-[#fbf9f7] hover:text-[#7e572e] transition-colors duration-300" href="/shop.html">New Arrivals</a>
 <a class="font-['Manrope'] uppercase tracking-[0.1em] text-xs text-[#5f5e5e] border-b border-[#5f5e5e] pb-1 hover:text-[#7e572e] transition-colors duration-300" href="/shop.html">Shop</a>
@@ -245,7 +245,7 @@
         const grid = document.querySelector('.grid.grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-3');
         grid.innerHTML = ''; // clear any static items just in case
         
-        for (const [id, product] of Object.entries(window.ATELIER_CATALOG)) {
+        for (const [id, product] of Object.entries(window.AZHAGII_CATALOG)) {
             const imgUrl = Array.isArray(product.images) ? product.images[0] : product.image;
             const html = `
             <div class="product-card group cursor-pointer" onclick="window.location.href='/product.html?id=${id}'">
@@ -291,11 +291,11 @@
 <footer class="bg-[#fbf9f7] dark:bg-[#1a1c1b] w-full pt-20 pb-10 px-12 border-t border-[#303331]/5">
 <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
 <div>
-<span class="font-['Noto_Serif'] text-xl mb-4 block text-[#303331] dark:text-[#fbf9f7]">THE ATELIER</span>
+<span class="font-['Noto_Serif'] text-xl mb-4 block text-[#303331] dark:text-[#fbf9f7]">AZHAGII</span>
 <p class="text-[#5f5e5e] dark:text-[#7e572e] font-['Manrope'] text-sm leading-relaxed">Defining modern elegance through curation and craftsmanship. Our studio is dedicated to the art of the perfect silhouette.</p>
 </div>
 <div>
-<h4 class="font-['Manrope'] uppercase tracking-[0.1em] text-xs font-bold mb-6 text-[#303331] dark:text-[#fbf9f7]">Atelier</h4>
+<h4 class="font-['Manrope'] uppercase tracking-[0.1em] text-xs font-bold mb-6 text-[#303331] dark:text-[#fbf9f7]">Azhagiii</h4>
 <div class="space-y-4">
 <a class="block font-['Manrope'] text-sm tracking-wide text-[#5f5e5e] dark:text-[#7e572e] hover:text-[#303331] dark:hover:text-white transition-all" href="/product.html">Our Story</a>
 <a class="block font-['Manrope'] text-sm tracking-wide text-[#5f5e5e] dark:text-[#7e572e] hover:text-[#303331] dark:hover:text-white transition-all" href="/product.html">Sustainability</a>
@@ -311,7 +311,7 @@
 </div>
 </div>
 <div>
-<h4 class="font-['Manrope'] uppercase tracking-[0.1em] text-xs font-bold mb-6 text-[#303331] dark:text-[#fbf9f7]">Join The Atelier</h4>
+<h4 class="font-['Manrope'] uppercase tracking-[0.1em] text-xs font-bold mb-6 text-[#303331] dark:text-[#fbf9f7]">Join Azhagiii</h4>
 <p class="text-[#5f5e5e] font-['Manrope'] text-xs mb-4">Receive invitations to private collection releases.</p>
 <div class="flex border-b border-outline-variant/30 pb-2">
 <input class="bg-transparent border-none focus:ring-0 w-full text-sm font-['Manrope']" placeholder="Email Address" type="email"/>
@@ -320,7 +320,7 @@
 </div>
 </div>
 <div class="mt-20 pt-8 border-t border-outline-variant/10 text-center">
-<span class="font-['Manrope'] text-[10px] tracking-[0.2em] text-[#5f5e5e] uppercase">© 2024 THE EDITORIAL ATELIER. ALL RIGHTS RESERVED.</span>
+<span class="font-['Manrope'] text-[10px] tracking-[0.2em] text-[#5f5e5e] uppercase">© 2024 AZHAGII. ALL RIGHTS RESERVED.</span>
 </div>
 </footer>
 </body></html>
