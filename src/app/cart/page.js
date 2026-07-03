@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { saveOrder, validateCoupon } from "@/lib/catalog";
+import { saveOrder, validateCoupon, fetchProducts, saveProduct } from "@/lib/catalog";
 import { getUser } from "@/lib/auth";
 import { account } from "@/lib/appwrite";
 import { useToast } from "@/components/ToastProvider";
@@ -153,6 +153,18 @@ export default function Cart() {
       };
       
       await saveOrder(orderPayload);
+      
+      // Reduce inventory
+      const allProducts = await fetchProducts();
+      for (const item of cartItems) {
+        const product = allProducts[item.id];
+        if (product && product.inventory && product.inventory[item.size] !== undefined) {
+          const currentQty = parseInt(product.inventory[item.size]) || 0;
+          const orderQty = parseInt(item.quantity) || 1;
+          product.inventory[item.size] = Math.max(0, currentQty - orderQty);
+          await saveProduct(product);
+        }
+      }
       localStorage.removeItem('atelier_cart');
       window.dispatchEvent(new Event('cartUpdated'));
       showToast("Order placed successfully!", "success");

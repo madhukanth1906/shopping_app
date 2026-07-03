@@ -167,6 +167,32 @@ export default function Admin() {
     }
   };
 
+  const handleDelete = async (productId) => {
+    try {
+      await deleteProduct(productId);
+      loadData();
+      showToast('Product removed successfully!', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to remove product.', 'error');
+    }
+  };
+
+  const handleRestock = async (product) => {
+    try {
+      const updatedInventory = { ...product.inventory };
+      ['XS', 'S', 'M', 'L', 'XL'].forEach(s => {
+        updatedInventory[s] = (parseInt(updatedInventory[s]) || 0) + 10;
+      });
+      await saveProduct({ ...product, inventory: updatedInventory });
+      loadData();
+      showToast('Product restocked successfully!', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to restock product.', 'error');
+    }
+  };
+
   const handleSubmitReply = async (review) => {
     if (!replyText) return;
     try {
@@ -421,8 +447,8 @@ export default function Admin() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button onClick={() => setActiveTab('Products')} className="bg-on-surface text-surface px-4 py-2 rounded text-[10px] font-bold uppercase tracking-wider hover:bg-secondary transition-colors">
-                            Add Stock
+                          <button onClick={() => handleRestock(alert.product)} className="bg-on-surface text-surface px-4 py-2 rounded text-[10px] font-bold uppercase tracking-wider hover:bg-secondary transition-colors">
+                            Restock (Add 10)
                           </button>
                           <button onClick={() => handleDelete(alert.product.$id)} className="bg-error text-surface px-4 py-2 rounded text-[10px] font-bold uppercase tracking-wider hover:bg-error/80 transition-colors">
                             Remove Product
@@ -455,8 +481,8 @@ export default function Admin() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button onClick={() => setActiveTab('Products')} className="bg-on-surface text-surface px-4 py-2 rounded text-[10px] font-bold uppercase tracking-wider hover:bg-secondary transition-colors">
-                            Add Stock
+                          <button onClick={() => handleRestock(alert.product)} className="bg-on-surface text-surface px-4 py-2 rounded text-[10px] font-bold uppercase tracking-wider hover:bg-secondary transition-colors">
+                            Restock (Add 10)
                           </button>
                           <button onClick={() => handleDismissAlert(alert.alertId)} className="p-2 text-outline hover:text-on-surface">
                             <span className="material-symbols-outlined text-lg">close</span>
@@ -846,7 +872,6 @@ export default function Admin() {
                 </div>
               </div>
 
-              {category === "Fashion Dress" && (
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-widest text-on-surface mb-3">Size Inventory *</label>
                   <div className="grid grid-cols-5 gap-4">
@@ -858,7 +883,6 @@ export default function Admin() {
                     ))}
                   </div>
                 </div>
-              )}
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-widest text-on-surface mb-2">Product Images (Max 3) *</label>
