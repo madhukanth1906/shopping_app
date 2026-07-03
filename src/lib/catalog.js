@@ -21,7 +21,8 @@ export async function fetchProducts() {
                 inventory: doc.inventory ? JSON.parse(doc.inventory) : {},
                 occasion: doc.occasion || '',
                 color: doc.color || '',
-                fabric: doc.fabric || ''
+                fabric: doc.fabric || '',
+                createdAt: doc.$createdAt
             };
         }
         return catalog;
@@ -229,6 +230,23 @@ export async function updateOrderStatus(orderId, status) {
         );
     } catch (error) {
         console.error("Error updating order status:", error);
+        throw error;
+    }
+}
+
+export async function cancelOrder(orderId, status, updatedShippingAddress) {
+    try {
+        return await databases.updateDocument(
+            DATABASE_ID,
+            ORDERS_COLLECTION_ID,
+            orderId,
+            { 
+                status,
+                shippingAddress: updatedShippingAddress
+            }
+        );
+    } catch (error) {
+        console.error("Error cancelling order:", error);
         throw error;
     }
 }

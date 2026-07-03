@@ -64,15 +64,23 @@ export default function ProductDetail() {
     }
     
     const cart = JSON.parse(localStorage.getItem('atelier_cart') || '[]');
-    const itemToAdd = {
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: Array.isArray(product.images) ? product.images[0] : product.image,
-      size: selectedSize
-    };
-    const newCart = [...cart, itemToAdd];
-    localStorage.setItem('atelier_cart', JSON.stringify(newCart));
+    
+    const existing = cart.find(c => c.id === product.id && c.size === selectedSize);
+    if (existing) {
+      existing.quantity = (parseInt(existing.quantity) || 1) + 1;
+    } else {
+      cart.push({
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        image: Array.isArray(product.images) ? product.images[0] : product.image,
+        size: selectedSize,
+        quantity: 1
+      });
+    }
+
+    localStorage.setItem('atelier_cart', JSON.stringify(cart));
+    window.dispatchEvent(new Event('cartUpdated'));
     showToast(`${product.name} added to your shopping bag!`, "success");
   };
 
@@ -204,7 +212,12 @@ export default function ProductDetail() {
                 {product.category === 'Fashion Dress' && availableSizes.length > 0 && (
                   <div>
                     <div className="flex justify-between items-center mb-4">
-                      <span className="text-xs font-label uppercase tracking-widest text-on-surface">Select Size</span>
+                      <span className="text-xs font-label uppercase tracking-widest text-on-surface flex items-center gap-3">
+                        Select Size
+                        {selectedSize && product.inventory && product.inventory[selectedSize] <= 5 && (
+                          <span className="bg-secondary/10 text-secondary px-2 py-0.5 rounded text-[10px] font-bold">Only {product.inventory[selectedSize]} left in stock!</span>
+                        )}
+                      </span>
                       <button className="text-[10px] font-label uppercase tracking-widest text-secondary hover:underline">Size Guide</button>
                     </div>
                     <div className="grid grid-cols-4 gap-2">
@@ -232,13 +245,16 @@ export default function ProductDetail() {
                 {product.category === 'Fashion Dress' && availableSizes.length === 0 && (
                   <p className="text-error text-sm font-bold uppercase tracking-widest">Out of Stock</p>
                 )}
+                {product.category !== 'Fashion Dress' && product.inventory && Object.values(product.inventory).reduce((sum, q) => sum + q, 0) === 0 && (
+                  <p className="text-error text-sm font-bold uppercase tracking-widest">Out of Stock</p>
+                )}
               </div>
 
               {/* Actions */}
               <div className="flex flex-col gap-3 mb-12">
                 <button 
                   onClick={handleAddToCart}
-                  disabled={product.category === 'Fashion Dress' && availableSizes.length === 0}
+                  disabled={(product.category === 'Fashion Dress' && availableSizes.length === 0) || (product.category !== 'Fashion Dress' && product.inventory && Object.values(product.inventory).reduce((sum, q) => sum + q, 0) === 0)}
                   className="w-full py-5 bg-on-surface text-surface rounded-full font-label uppercase tracking-[0.2em] text-xs hover:bg-secondary transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Add to Shopping Bag
@@ -265,6 +281,12 @@ export default function ProductDetail() {
         <section className="max-w-4xl mx-auto mb-32">
           <div className="flex justify-between items-end mb-12 border-b border-outline-variant/20 pb-4">
             <h3 className="font-headline text-3xl text-on-surface">Customer Reviews</h3>
+            {reviews.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-secondary" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                <span className="font-label text-sm uppercase tracking-widest text-on-surface-variant font-bold">{avgRating} / 5</span>
+              </div>
+            )}
           </div>
           
           <div className="space-y-12">

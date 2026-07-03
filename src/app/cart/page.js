@@ -23,7 +23,8 @@ export default function Cart() {
     fullName: "",
     address: "",
     city: "",
-    postalCode: ""
+    postalCode: "",
+    paymentMethod: "Cash on Delivery"
   });
   
   // Saved Addresses State
@@ -47,7 +48,24 @@ export default function Cart() {
     let total = 0;
     cart.forEach(item => {
       const numericStr = (item.price || "").replace(/[^0-9.]/g, '');
-      total += (parseFloat(numericStr) || 0);
+      total += (parseFloat(numericStr) || 0) * (item.quantity || 1);
+    });
+    setSubtotal(total);
+  };
+
+  const updateQuantity = (index, newQuantity) => {
+    if (newQuantity < 1) return;
+    const cart = JSON.parse(localStorage.getItem('atelier_cart') || '[]');
+    cart[index].quantity = newQuantity;
+    localStorage.setItem('atelier_cart', JSON.stringify(cart));
+    window.dispatchEvent(new Event('cartUpdated'));
+    
+    setCartItems(cart);
+    
+    let total = 0;
+    cart.forEach(item => {
+      const numericStr = (item.price || "").replace(/[^0-9.]/g, '');
+      total += (parseFloat(numericStr) || 0) * (item.quantity || 1);
     });
     setSubtotal(total);
   };
@@ -76,7 +94,8 @@ export default function Cart() {
       fullName: addr.fullName,
       address: addr.address,
       city: addr.city,
-      postalCode: addr.postalCode
+      postalCode: addr.postalCode,
+      paymentMethod: shipping.paymentMethod
     });
   };
 
@@ -84,6 +103,7 @@ export default function Cart() {
     const updated = [...cartItems];
     updated.splice(index, 1);
     localStorage.setItem('atelier_cart', JSON.stringify(updated));
+    window.dispatchEvent(new Event('cartUpdated'));
     loadCart();
   };
 
@@ -134,6 +154,7 @@ export default function Cart() {
       
       await saveOrder(orderPayload);
       localStorage.removeItem('atelier_cart');
+      window.dispatchEvent(new Event('cartUpdated'));
       showToast("Order placed successfully!", "success");
       router.push("/");
     } catch (err) {
@@ -186,8 +207,10 @@ export default function Cart() {
                           <p className="font-headline text-lg mt-2">{item.price}</p>
                         </div>
                         <div className="flex items-center gap-6 mt-4">
-                          <div className="flex items-center border border-outline-variant/20 rounded-full px-4 py-1 gap-4">
-                            <span className="text-xs font-bold w-4 text-center">1</span>
+                          <div className="flex items-center border border-outline-variant/20 rounded-full px-2 py-1 gap-4">
+                            <button onClick={() => updateQuantity(index, (item.quantity || 1) - 1)} className="text-outline hover:text-on-surface transition-colors w-6 h-6 flex items-center justify-center">-</button>
+                            <span className="text-xs font-bold w-4 text-center">{item.quantity || 1}</span>
+                            <button onClick={() => updateQuantity(index, (item.quantity || 1) + 1)} className="text-outline hover:text-on-surface transition-colors w-6 h-6 flex items-center justify-center">+</button>
                           </div>
                         </div>
                       </div>
@@ -259,7 +282,7 @@ export default function Cart() {
                         </div>
                       ))}
                       <div 
-                        onClick={() => { setSelectedAddressId('new'); setShipping({ fullName: '', address: '', city: '', postalCode: '' }); }}
+                        onClick={() => { setSelectedAddressId('new'); setShipping({ fullName: '', address: '', city: '', postalCode: '', paymentMethod: shipping.paymentMethod }); }}
                         className={`p-4 rounded-xl border border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors ${selectedAddressId === 'new' ? 'border-primary bg-primary-container/10' : 'border-outline-variant hover:border-on-surface'}`}
                       >
                         <span className="material-symbols-outlined text-outline">add</span>
@@ -300,13 +323,30 @@ export default function Cart() {
               <section>
                 <h2 className="font-headline text-3xl mb-10">Payment Method</h2>
                 <div className="space-y-4">
-                  <label className="flex items-center p-6 bg-surface-container-low rounded-lg cursor-pointer border border-transparent hover:border-outline-variant/30 transition-all">
-                    <input defaultChecked className="text-on-surface focus:ring-on-surface mr-6 accent-on-surface" name="payment" type="radio" />
+                  <label className={`flex items-center p-6 bg-surface-container-low rounded-lg cursor-pointer border transition-all ${shipping.paymentMethod === 'Cash on Delivery' ? 'border-secondary' : 'border-transparent hover:border-outline-variant/30'}`}>
+                    <input checked={shipping.paymentMethod === 'Cash on Delivery'} onChange={() => setShipping({...shipping, paymentMethod: 'Cash on Delivery'})} className="text-on-surface focus:ring-on-surface mr-6 accent-on-surface" name="payment" type="radio" />
                     <div className="flex-1 flex items-center gap-4">
                       <span className="material-symbols-outlined text-outline">payments</span>
                       <span className="uppercase tracking-[0.2em] text-[10px] font-bold">Cash on Delivery</span>
                     </div>
                   </label>
+                  <div className={`flex flex-col p-6 bg-surface-container-low rounded-lg border transition-all ${shipping.paymentMethod === 'Online Payment' ? 'border-secondary' : 'border-transparent hover:border-outline-variant/30'}`}>
+                    <label className="flex items-center cursor-pointer">
+                      <input checked={shipping.paymentMethod === 'Online Payment'} onChange={() => setShipping({...shipping, paymentMethod: 'Online Payment'})} className="text-on-surface focus:ring-on-surface mr-6 accent-on-surface" name="payment" type="radio" />
+                      <div className="flex-1 flex items-center gap-4">
+                        <span className="material-symbols-outlined text-outline">credit_card</span>
+                        <span className="uppercase tracking-[0.2em] text-[10px] font-bold">Online Payment (UPI)</span>
+                      </div>
+                    </label>
+                    {shipping.paymentMethod === 'Online Payment' && (
+                      <div className="mt-4 ml-10 p-4 bg-surface-container-lowest border border-outline-variant/20 rounded text-sm">
+                        <p className="font-bold text-xs uppercase tracking-widest text-on-surface mb-2">Scan & Pay</p>
+                        <p className="text-on-surface-variant text-xs mb-1">Please make the payment to the following UPI ID:</p>
+                        <p className="font-bold text-secondary text-base">9940984501@ybl</p>
+                        <p className="text-[10px] text-outline mt-2 italic">* Your order will be processed once payment is confirmed.</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </section>
             </div>

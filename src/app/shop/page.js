@@ -1,13 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import { fetchProducts } from "@/lib/catalog";
 import Link from "next/link";
 
-export default function Shop() {
+function ShopContent() {
+  const searchParams = useSearchParams();
+  const filterParam = searchParams.get("filter");
+  const categoryParam = searchParams.get("category");
+
   const [products, setProducts] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -21,6 +26,10 @@ export default function Shop() {
   const [selectedOccasions, setSelectedOccasions] = useState([]);
   const [selectedColors, setSelectedColors] = useState([]);
   const [selectedFabrics, setSelectedFabrics] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState(categoryParam ? [categoryParam] : []);
+
+  // For dynamic categories
+  const allCategories = Array.from(new Set(Object.values(products).map(p => p.category).filter(Boolean)));
 
   useEffect(() => {
     async function load() {
@@ -40,6 +49,14 @@ export default function Shop() {
     }
     load();
   }, []);
+
+  useEffect(() => {
+    if (categoryParam) {
+      setSelectedCategories([categoryParam]);
+    } else {
+      setSelectedCategories([]);
+    }
+  }, [categoryParam]);
 
   const toggleFilter = (setState, val) => {
     setState(prev => prev.includes(val) ? prev.filter(v => v !== val) : [...prev, val]);
@@ -61,11 +78,14 @@ export default function Shop() {
     const matchOccasion = selectedOccasions.length === 0 || (product.occasion && selectedOccasions.includes(product.occasion));
     const matchColor = selectedColors.length === 0 || (product.color && selectedColors.includes(product.color));
     const matchFabric = selectedFabrics.length === 0 || (product.fabric && selectedFabrics.includes(product.fabric));
+    const matchCategory = selectedCategories.length === 0 || selectedCategories.includes(product.category);
 
-    return matchSize && matchPrice && matchOccasion && matchColor && matchFabric;
+    return matchSize && matchPrice && matchOccasion && matchColor && matchFabric && matchCategory;
   });
 
-  if (sortOption === "Price: Low to High") {
+  if (filterParam === 'new') {
+    filteredProducts.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  } else if (sortOption === "Price: Low to High") {
     filteredProducts.sort((a, b) => parsePrice(a.price) - parsePrice(b.price));
   } else if (sortOption === "Price: High to Low") {
     filteredProducts.sort((a, b) => parsePrice(b.price) - parsePrice(a.price));
@@ -140,6 +160,7 @@ export default function Shop() {
           {/* Sidebar Filters */}
           <aside className="hidden md:block w-64 flex-shrink-0">
             <div className="space-y-10 sticky top-32">
+              
               {/* Occasion */}
               <div>
                 <h3 className="font-label text-xs uppercase tracking-[0.2em] text-on-surface font-bold mb-6">Occasion</h3>
@@ -262,8 +283,10 @@ export default function Shop() {
               )}
               
               {!loading && !error && filteredProducts.length === 0 && (
-                <p className="text-outline text-sm col-span-full mt-10">No products match your current filters.</p>
-              )}
+              <div className="col-span-full py-20 text-center">
+                <p className="font-label uppercase tracking-widest text-outline">No products found matching your criteria.</p>
+              </div>
+            )}
               
               {!loading && !error && filteredProducts.map(product => (
                 <ProductCard key={product.id} product={product} />
@@ -274,5 +297,13 @@ export default function Shop() {
       </main>
       <Footer />
     </>
+  );
+}
+
+export default function Shop() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ShopContent />
+    </Suspense>
   );
 }

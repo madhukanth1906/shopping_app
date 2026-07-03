@@ -44,9 +44,9 @@ export default function Home() {
               <Link href="/shop" className="bg-on-surface text-surface px-10 py-4 rounded-full font-label uppercase tracking-widest text-xs hover:bg-secondary transition-all transform hover:scale-105 inline-block text-center">
                 Shop Now
               </Link>
-              <button className="bg-surface/20 backdrop-blur-md text-white border border-white/30 px-10 py-4 rounded-full font-label uppercase tracking-widest text-xs hover:bg-white hover:text-on-surface transition-all transform hover:scale-105">
+              <Link href="/shop?filter=new" className="bg-surface/20 backdrop-blur-md text-white border border-white/30 px-10 py-4 rounded-full font-label uppercase tracking-widest text-xs hover:bg-white hover:text-on-surface transition-all transform hover:scale-105 inline-block text-center">
                 New Arrivals
-              </button>
+              </Link>
             </div>
           </div>
         </section>

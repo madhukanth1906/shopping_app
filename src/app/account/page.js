@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { getUser, loginWithGoogle, logout } from "@/lib/auth";
-import { fetchUserOrders } from "@/lib/catalog";
+import { fetchUserOrders, cancelOrder } from "@/lib/catalog";
 import { account } from "@/lib/appwrite";
 import { useToast } from "@/components/ToastProvider";
 import Link from "next/link";
@@ -15,12 +15,30 @@ export default function Account() {
   const [user, setUser] = useState(null);
   const [orders, setOrders] = useState([]);
   const [wishlist, setWishlist] = useState([]);
+  const [selectedWishlist, setSelectedWishlist] = useState(new Set());
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
 
+  useEffect(() => {
+    // Check URL for tab param
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get('tab');
+      if (tab === 'wishlist') {
+        setActiveTab('wishlist');
+      }
+    }
+  }, []);
+
   const [newAddress, setNewAddress] = useState({ fullName: '', address: '', city: '', postalCode: '' });
   const [isAddingAddress, setIsAddingAddress] = useState(false);
+
+  // Cancellation State
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
     async function fetchUser() {
@@ -83,6 +101,46 @@ export default function Account() {
     }
   };
 
+  const toggleWishlistSelection = (id) => {
+    const newSelection = new Set(selectedWishlist);
+    if (newSelection.has(id)) {
+      newSelection.delete(id);
+    } else {
+      newSelection.add(id);
+    }
+    setSelectedWishlist(newSelection);
+  };
+
+  const handleAddSelectedToCart = () => {
+    const cart = JSON.parse(localStorage.getItem('atelier_cart') || '[]');
+    let addedCount = 0;
+    
+    selectedWishlist.forEach(id => {
+      const item = wishlist.find(w => w.id === id);
+      if (item) {
+        const existing = cart.find(c => c.id === item.id);
+        if (existing) {
+          existing.quantity += 1;
+        } else {
+          cart.push({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            image: item.image,
+            quantity: 1,
+            size: item.inventory ? Object.keys(item.inventory)[0] : 'One Size'
+          });
+        }
+        addedCount++;
+      }
+    });
+
+    localStorage.setItem('atelier_cart', JSON.stringify(cart));
+    window.dispatchEvent(new Event('cartUpdated'));
+    setSelectedWishlist(new Set());
+    showToast(`Added ${addedCount} item(s) to shopping bag!`, 'success');
+  };
+
   const handleDeleteAddress = async (id) => {
     try {
       const updatedAddresses = addresses.filter(a => a.id !== id);
@@ -92,6 +150,38 @@ export default function Account() {
     } catch (err) {
       console.error(err);
       showToast('Failed to delete address.', 'error');
+    }
+  };
+
+  const handleCancelOrder = async (e) => {
+    e.preventDefault();
+    if (!cancelReason) return;
+    setIsCancelling(true);
+    try {
+      const shippingAddress = JSON.parse(orderToCancel.shippingAddress || '{}');
+      const isOnline = shippingAddress.paymentMethod === 'Online Payment';
+      const newStatus = isOnline ? 'Refund Requested' : 'Cancelled';
+      
+      const updatedShipping = JSON.stringify({
+        ...shippingAddress,
+        cancelReason: cancelReason
+      });
+
+      await cancelOrder(orderToCancel.$id, newStatus, updatedShipping);
+      showToast(`Order ${isOnline ? 'refund requested' : 'cancelled'}.`, 'success');
+      
+      // Refresh orders
+      const userOrders = await fetchUserOrders(user.$id);
+      setOrders(userOrders);
+      
+      setIsCancelModalOpen(false);
+      setOrderToCancel(null);
+      setCancelReason('');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to cancel order.', 'error');
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -117,6 +207,7 @@ export default function Account() {
               <th className="px-6 py-4 font-medium">Date</th>
               <th className="px-6 py-4 font-medium">Status</th>
               <th className="px-6 py-4 font-medium text-right">Total</th>
+              <th className="px-6 py-4 font-medium text-right">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-outline-variant/5">
@@ -137,6 +228,16 @@ export default function Account() {
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest ${statusColor}`}>{order.status}</span>
                       </td>
                       <td className="px-6 py-5 text-right font-semibold">₹{order.total.toFixed(2)}</td>
+                      <td className="px-6 py-5 text-right">
+                        {(order.status === 'Pending' || order.status === 'Processing') && (
+                          <button 
+                            onClick={() => { setOrderToCancel(order); setIsCancelModalOpen(true); }}
+                            className="text-[10px] font-bold uppercase tracking-widest text-error hover:underline"
+                          >
+                            Cancel
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   );
               })
@@ -190,10 +291,10 @@ export default function Account() {
                     <span className="material-symbols-outlined">location_on</span>
                     <span className="text-sm">Saved Addresses</span>
                   </button>
-                  <Link className="flex items-center gap-3 px-4 py-3 text-on-surface hover:bg-surface-container-low rounded-lg transition-all" href="/shop">
+                  <button onClick={() => setActiveTab('wishlist')} className={`flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-all ${activeTab === 'wishlist' ? 'bg-primary-container text-on-primary-container' : 'text-on-surface hover:bg-surface-container-low'}`}>
                     <span className="material-symbols-outlined">favorite</span>
                     <span className="text-sm">Wishlist</span>
-                  </Link>
+                  </button>
                   {user?.email === 'madhu9940984501@gmail.com' && (
                     <Link className="flex items-center gap-3 px-4 py-3 text-secondary hover:bg-secondary-container/30 rounded-lg font-bold transition-all mt-4 border border-secondary/30" href="/admin">
                       <span className="material-symbols-outlined">admin_panel_settings</span>
@@ -244,6 +345,7 @@ export default function Account() {
                                 const newWishlist = wishlist.filter(w => w.id !== item.id);
                                 setWishlist(newWishlist);
                                 localStorage.setItem('atelier_wishlist', JSON.stringify(newWishlist));
+                                window.dispatchEvent(new Event('wishlistUpdated'));
                               }}
                               className="absolute top-4 right-4 p-2 bg-surface/80 backdrop-blur-sm rounded-full text-on-surface hover:bg-error hover:text-surface transition-all z-10"
                             >
@@ -276,6 +378,81 @@ export default function Account() {
                     </div>
                   </div>
                 </>
+              )}
+
+              {activeTab === 'wishlist' && (
+                <div className="space-y-6">
+                  <div className="flex justify-between items-end border-b border-outline-variant/10 pb-4">
+                    <h3 className="font-['Manrope'] uppercase tracking-widest text-xs font-bold text-on-surface">Curated Wishlist</h3>
+                    <div className="flex items-center gap-4">
+                      {selectedWishlist.size > 0 && (
+                        <button 
+                          onClick={handleAddSelectedToCart}
+                          className="text-[10px] font-bold uppercase tracking-widest bg-secondary text-on-secondary px-4 py-2 rounded hover:bg-on-surface transition-colors"
+                        >
+                          Add Selected to Bag
+                        </button>
+                      )}
+                      <span className="text-[10px] text-outline">{wishlist.length} ITEMS SAVED</span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    {wishlist.map(item => (
+                      <div key={item.id} className="group relative flex flex-col gap-4">
+                        <div className="aspect-[4/5] overflow-hidden rounded-lg bg-surface-container-low relative">
+                          <img alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src={item.image} />
+                          <button 
+                            onClick={() => {
+                              const newWishlist = wishlist.filter(w => w.id !== item.id);
+                              setWishlist(newWishlist);
+                              localStorage.setItem('atelier_wishlist', JSON.stringify(newWishlist));
+                              window.dispatchEvent(new Event('wishlistUpdated'));
+                              
+                              if (selectedWishlist.has(item.id)) {
+                                const newSelection = new Set(selectedWishlist);
+                                newSelection.delete(item.id);
+                                setSelectedWishlist(newSelection);
+                              }
+                            }}
+                            className="absolute top-4 right-4 p-2 bg-surface/80 backdrop-blur-sm rounded-full text-on-surface hover:bg-error hover:text-surface transition-all z-10"
+                          >
+                            <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>close</span>
+                          </button>
+                          
+                          <div className="absolute top-4 left-4 z-10">
+                            <input 
+                              type="checkbox" 
+                              checked={selectedWishlist.has(item.id)}
+                              onChange={() => toggleWishlistSelection(item.id)}
+                              className="w-5 h-5 rounded border-outline-variant text-secondary focus:ring-secondary-container cursor-pointer shadow-sm" 
+                            />
+                          </div>
+
+                          <Link href={`/product/${item.id}`} className="absolute inset-0 z-0"></Link>
+                        </div>
+                        <div className="space-y-1">
+                          <h4 className="font-['Manrope'] uppercase text-[10px] tracking-[0.15em] text-outline">Saved Item</h4>
+                          <div className="flex justify-between items-baseline">
+                            <p className="text-sm font-semibold">{item.name}</p>
+                            <p className="font-['Noto_Serif'] text-sm italic">{item.price}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    <div className="group relative flex flex-col gap-4">
+                      <div className="aspect-[4/5] rounded-lg bg-[#7e572e]/5 border border-dashed border-[#7e572e]/20 flex flex-col items-center justify-center p-8 text-center gap-4 hover:bg-[#7e572e]/10 transition-colors cursor-pointer">
+                        <Link href="/shop" className="absolute inset-0"></Link>
+                        <span className="material-symbols-outlined text-4xl text-[#7e572e]/40">add_circle</span>
+                        <div className="space-y-1">
+                          <p className="text-xs font-bold uppercase tracking-widest text-[#7e572e]">Add to Moodboard</p>
+                          <p className="text-[11px] text-outline-variant max-w-[140px]">Keep exploring to find your next statement piece.</p>
+                        </div>
+                        <span className="mt-2 text-[10px] uppercase tracking-widest font-bold border-b border-on-surface/10 group-hover:border-on-surface transition-all">Shop Collections</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               )}
 
               {activeTab === 'history' && (
@@ -335,6 +512,33 @@ export default function Account() {
         )}
       </main>
       
+      {isCancelModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-surface rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="px-8 py-6 border-b border-outline-variant/10 flex justify-between items-center">
+              <h3 className="font-headline text-xl">Cancel Order</h3>
+              <button onClick={() => { setIsCancelModalOpen(false); setOrderToCancel(null); }} className="material-symbols-outlined text-outline hover:text-on-surface">close</button>
+            </div>
+            <form onSubmit={handleCancelOrder} className="p-8 space-y-6">
+              <p className="text-sm text-on-surface-variant font-body leading-relaxed">
+                Are you sure you want to cancel order <strong>#{orderToCancel?.$id.slice(-6)}</strong>? 
+                Please provide a reason for cancellation below.
+              </p>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-widest text-on-surface mb-2">Cancellation Reason *</label>
+                <textarea required value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} rows={3} placeholder="e.g. Ordered by mistake, changed my mind..." className="w-full bg-surface-container border border-outline-variant/30 rounded p-3 text-sm focus:ring-1 focus:ring-secondary outline-none"></textarea>
+              </div>
+              <div className="pt-4 flex justify-end gap-4">
+                <button type="button" onClick={() => { setIsCancelModalOpen(false); setOrderToCancel(null); }} className="px-6 py-3 text-xs font-bold uppercase tracking-widest text-outline hover:text-on-surface">Keep Order</button>
+                <button type="submit" disabled={isCancelling} className="bg-error text-surface px-8 py-3 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-error/90 transition-all disabled:opacity-50">
+                  {isCancelling ? 'Cancelling...' : 'Confirm Cancellation'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <Footer />
     </div>
   );
