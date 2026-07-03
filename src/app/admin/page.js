@@ -167,17 +167,6 @@ export default function Admin() {
     }
   };
 
-  const handleDelete = async (productId) => {
-    try {
-      await deleteProduct(productId);
-      loadData();
-      showToast('Product removed successfully!', 'success');
-    } catch (err) {
-      console.error(err);
-      showToast('Failed to remove product.', 'error');
-    }
-  };
-
   const handleRestock = async (product) => {
     try {
       const updatedInventory = { ...product.inventory };
