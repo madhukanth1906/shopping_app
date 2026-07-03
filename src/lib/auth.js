@@ -1,45 +1,29 @@
+import { account } from './appwrite';
 import { OAuthProvider } from 'appwrite';
-import { account } from './appwrite.js';
 
-/**
- * Initiates the Google OAuth2 login flow.
- * @param {string} [redirectUrl] - The URL to redirect to upon successful login.
- */
-export function loginWithGoogle(redirectUrl) {
-    // Determine current origin for callbacks
-    const currentOrigin = window.location.origin;
-    const successUrl = redirectUrl || `${currentOrigin}/account.html`;
-    const failureUrl = `${currentOrigin}/account.html?error=login_failed`;
-
-    // Start OAuth flow
-    account.createOAuth2Session(
+export const loginWithGoogle = () => {
+    // Fallback to createOAuth2Session if createOAuth2Token is not available in this SDK version
+    const method = account.createOAuth2Token || account.createOAuth2Session;
+    method.call(
+        account,
         OAuthProvider.Google,
-        successUrl,
-        failureUrl
+        `${window.location.origin}/account`,
+        `${window.location.origin}/account`
     );
-}
+};
 
-/**
- * Logs out the current user.
- */
-export async function logout() {
+export const logout = async () => {
     try {
         await account.deleteSession('current');
     } catch (e) {
-        console.error('Logout error:', e);
+        console.error(e);
     }
-}
+};
 
-/**
- * Fetches the currently logged-in user.
- * Returns null if no user is logged in.
- */
-export async function getCurrentUser() {
+export const getUser = async () => {
     try {
-        const user = await account.get();
-        return user;
+        return await account.get();
     } catch (e) {
-        // Not logged in or error
         return null;
     }
-}
+};
