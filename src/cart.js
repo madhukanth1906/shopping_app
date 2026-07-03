@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const postal = inputPostal.value.trim();
             
             if (!fullName || !address || !city || !postal) {
-                alert('Please fill out all address fields.');
+                showToast('Please fill out all address fields.', 'error');
                 return;
             }
 
@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     );
                     customerDocId = response.$id;
                 }
-                alert('Address saved successfully!');
+                showToast('Address saved successfully!', 'success');
                 btnSaveAddress.textContent = 'Saved';
                 setTimeout(() => {
                     btnSaveAddress.textContent = 'Save Address';
@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }, 2000);
             } catch (error) {
                 console.error('Error saving address:', error);
-                alert('Failed to save address.');
+                showToast('Failed to save address.', 'error');
                 btnSaveAddress.textContent = 'Save Address';
                 btnSaveAddress.disabled = false;
             }
@@ -126,5 +126,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {
             console.error('Error fetching customer record:', error);
         }
+    }
+
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        
+        const toast = document.createElement('div');
+        toast.className = `px-6 py-3 rounded-lg shadow-lg text-sm font-semibold transition-all duration-300 transform translate-y-full opacity-0 pointer-events-auto ${type === 'error' ? 'bg-error text-on-error' : 'bg-surface-container-highest text-on-surface'}`;
+        toast.textContent = message;
+        
+        container.appendChild(toast);
+        
+        // Animate in
+        requestAnimationFrame(() => {
+            toast.classList.remove('translate-y-full', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+        });
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            toast.classList.remove('translate-y-0', 'opacity-100');
+            toast.classList.add('translate-y-full', 'opacity-0');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
     }
 });

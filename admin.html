@@ -366,49 +366,70 @@
     </div>
 </div>
 
-<script src="/catalog.js"></script>
-<script>
-    function renderAdminTable() {
+<script type="module">
+    import { fetchProducts, saveProduct, deleteProduct } from './src/catalog.js';
+
+    async function renderAdminTable() {
         const tbody = document.getElementById('admin-product-table');
-        tbody.innerHTML = '';
-        const catalog = window.AZHAGII_CATALOG;
+        tbody.innerHTML = '<tr><td colspan="5" class="px-8 py-5 text-center text-sm text-outline">Loading products...</td></tr>';
         
-        for (const [id, product] of Object.entries(catalog)) {
-            const tr = document.createElement('tr');
-            tr.className = 'group hover:bg-surface-container-low/30 transition-colors';
+        try {
+            const catalog = await fetchProducts();
+            tbody.innerHTML = '';
             
-            // Image
-            const imgUrl = Array.isArray(product.images) ? product.images[0] : product.image;
-            const size = product.size || 'One Size';
-            
-            tr.innerHTML = `
-                <td class="px-8 py-5">
-                    <div class="w-12 h-16 rounded overflow-hidden bg-surface-container">
-                        <img src="${imgUrl}" class="w-full h-full object-cover" />
-                    </div>
-                </td>
-                <td class="px-8 py-5 text-sm font-semibold">${product.name}</td>
-                <td class="px-8 py-5 text-sm">${product.price}</td>
-                <td class="px-8 py-5 text-sm text-outline">${size}</td>
-                <td class="px-8 py-5 text-right">
-                    <button onclick="deleteProduct('${id}')" class="text-error hover:text-error-dim transition-colors material-symbols-outlined text-xl">delete</button>
-                </td>
-            `;
-            tbody.appendChild(tr);
+            if (Object.keys(catalog).length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="px-8 py-5 text-center text-sm text-outline">No products found.</td></tr>';
+                return;
+            }
+
+            for (const [id, product] of Object.entries(catalog)) {
+                const tr = document.createElement('tr');
+                tr.className = 'group hover:bg-surface-container-low/30 transition-colors';
+                
+                // Image
+                const imgUrl = Array.isArray(product.images) ? product.images[0] : product.image;
+                const size = product.size || 'One Size';
+                
+                tr.innerHTML = `
+                    <td class="px-8 py-5">
+                        <div class="w-12 h-16 rounded overflow-hidden bg-surface-container">
+                            <img src="${imgUrl}" class="w-full h-full object-cover" />
+                        </div>
+                    </td>
+                    <td class="px-8 py-5 text-sm font-semibold">${product.name}</td>
+                    <td class="px-8 py-5 text-sm">${product.price}</td>
+                    <td class="px-8 py-5 text-sm text-outline">${size}</td>
+                    <td class="px-8 py-5 text-right">
+                        <button onclick="window.handleDeleteProduct('${id}')" class="text-error hover:text-error-dim transition-colors material-symbols-outlined text-xl">delete</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            }
+        } catch (err) {
+            console.error(err);
+            tbody.innerHTML = '<tr><td colspan="5" class="px-8 py-5 text-center text-sm text-error">Failed to load products.</td></tr>';
         }
     }
 
-    function deleteProduct(id) {
+    window.handleDeleteProduct = async function(id) {
         if(confirm('Are you sure you want to delete this dress?')) {
-            const newCatalog = {...window.AZHAGII_CATALOG};
-            delete newCatalog[id];
-            window.saveCatalog(newCatalog);
-            renderAdminTable();
+            try {
+                await deleteProduct(id);
+                renderAdminTable();
+            } catch (err) {
+                alert('Failed to delete product.');
+            }
         }
     }
 
-    document.getElementById('add-dress-form').addEventListener('submit', function(e) {
+    document.getElementById('add-dress-form').addEventListener('submit', async function(e) {
         e.preventDefault();
+        
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Saving...';
+        submitBtn.disabled = true;
+
         const name = document.getElementById('dress-name').value;
         const price = document.getElementById('dress-price').value;
         const size = document.getElementById('dress-size').value;
@@ -418,23 +439,28 @@
         
         const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
         
-        const newCatalog = {...window.AZHAGII_CATALOG};
-        newCatalog[id] = {
+        const newProduct = {
             id: id,
             name: name,
             price: price.startsWith('₹') ? price : '₹' + price,
             size: size,
-            image: img1, // fallback
+            image: img1,
             images: [img1, img2, img3],
             desc: `A newly added ${name} in size ${size}.`
         };
         
-        window.saveCatalog(newCatalog);
-        
-        // Reset and close
-        this.reset();
-        document.getElementById('add-dress-modal').classList.add('hidden');
-        renderAdminTable();
+        try {
+            await saveProduct(newProduct);
+            // Reset and close
+            this.reset();
+            document.getElementById('add-dress-modal').classList.add('hidden');
+            renderAdminTable();
+        } catch (err) {
+            alert('Failed to save product.');
+        } finally {
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        }
     });
 
     document.addEventListener('DOMContentLoaded', () => {

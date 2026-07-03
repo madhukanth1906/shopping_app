@@ -331,46 +331,53 @@
 </div>
 </footer>
 
-<script src="/catalog.js"></script>
-<script>
-    document.addEventListener("DOMContentLoaded", () => {
+<script type="module">
+    import { fetchProducts } from './src/catalog.js';
+
+    document.addEventListener("DOMContentLoaded", async () => {
         const urlParams = new URLSearchParams(window.location.search);
         const productId = urlParams.get('id');
         
-        if (productId && window.AZHAGII_CATALOG && window.AZHAGII_CATALOG[productId]) {
-            const product = window.AZHAGII_CATALOG[productId];
+        try {
+            const catalog = await fetchProducts();
             
-            // Update Title
-            const titleEl = document.getElementById('product-title');
-            if (titleEl) titleEl.textContent = product.name;
-            
-            // Update Price
-            const priceEl = document.getElementById('product-price');
-            if (priceEl) priceEl.textContent = product.price;
-            
-            // Update Description
-            const descEl = document.getElementById('product-desc');
-            if (descEl) descEl.textContent = product.desc;
-            
-            
-            // Update Main Image
-            const mainImg = document.getElementById('main-image');
-            const imgUrl1 = Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : product.image;
-            if (mainImg) mainImg.src = imgUrl1;
-            
-            // Update Thumbnails
-            const thumbs = document.querySelectorAll('img.thumb-image');
-            thumbs.forEach((thumb, index) => {
-                let tUrl = imgUrl1;
-                if(Array.isArray(product.images) && product.images.length > index) {
-                    tUrl = product.images[index];
-                }
-                thumb.src = tUrl;
-            });
+            if (productId && catalog && catalog[productId]) {
+                const product = catalog[productId];
+                
+                // Update Title
+                const titleEl = document.getElementById('product-title');
+                if (titleEl) titleEl.textContent = product.name;
+                
+                // Update Price
+                const priceEl = document.getElementById('product-price');
+                if (priceEl) priceEl.textContent = product.price;
+                
+                // Update Description
+                const descEl = document.getElementById('product-desc');
+                if (descEl) descEl.textContent = product.desc;
+                
+                
+                // Update Main Image
+                const mainImg = document.getElementById('main-image');
+                const imgUrl1 = Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : product.image;
+                if (mainImg) mainImg.src = imgUrl1;
+                
+                // Update Thumbnails
+                const thumbs = document.querySelectorAll('img.thumb-image');
+                thumbs.forEach((thumb, index) => {
+                    let tUrl = imgUrl1;
+                    if(Array.isArray(product.images) && product.images.length > index) {
+                        tUrl = product.images[index];
+                    }
+                    thumb.src = tUrl;
+                });
 
-            // Update breadcrumb
-            const breadcrumb = document.querySelector('nav a[href="/product.html"]');
-            if(breadcrumb) breadcrumb.textContent = product.name;
+                // Update breadcrumb
+                const breadcrumb = document.querySelector('nav a[href="/product.html"]');
+                if(breadcrumb) breadcrumb.textContent = product.name;
+            }
+        } catch (err) {
+            console.error("Error loading product:", err);
         }
     });
 </script>

@@ -240,31 +240,46 @@
 <div class="flex-grow">
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-16 gap-x-8">
 </div>
-<script src="/catalog.js"></script>
-<script>
-    document.addEventListener("DOMContentLoaded", () => {
-        const grid = document.querySelector('.grid.grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-3');
-        grid.innerHTML = ''; // clear any static items just in case
+<script type="module">
+    import { fetchProducts } from './src/catalog.js';
+
+    document.addEventListener("DOMContentLoaded", async () => {
+        const grid = document.querySelector('.grid.grid-cols-1.sm\\:grid-cols-2.lg\\:grid-cols-3');
+        grid.innerHTML = '<p class="text-outline text-sm col-span-full">Loading products...</p>';
         
-        for (const [id, product] of Object.entries(window.AZHAGII_CATALOG)) {
-            const imgUrl = Array.isArray(product.images) ? product.images[0] : product.image;
-            const html = `
-            <div class="product-card group cursor-pointer" onclick="window.location.href='/product.html?id=${id}'">
-                <div class="relative aspect-[3/4] mb-6 overflow-hidden bg-surface-container-low rounded-lg">
-                    <img src="${imgUrl}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                    <div class="quick-shop-overlay absolute inset-0 flex items-end p-6 bg-gradient-to-t from-surface/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button class="w-full py-4 bg-on-surface text-surface font-label text-[10px] uppercase tracking-widest rounded-full hover:bg-secondary transition-colors">View Details</button>
+        try {
+            const catalog = await fetchProducts();
+            grid.innerHTML = ''; // clear loading text
+            
+            const entries = Object.entries(catalog || {});
+            if (entries.length === 0) {
+                grid.innerHTML = '<p class="text-outline text-sm col-span-full">No products available at the moment.</p>';
+                return;
+            }
+
+            for (const [id, product] of entries) {
+                const imgUrl = Array.isArray(product.images) ? product.images[0] : product.image;
+                const html = `
+                <div class="product-card group cursor-pointer" onclick="window.location.href='/product.html?id=${id}'">
+                    <div class="relative aspect-[3/4] mb-6 overflow-hidden bg-surface-container-low rounded-lg">
+                        <img src="${imgUrl}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                        <div class="quick-shop-overlay absolute inset-0 flex items-end p-6 bg-gradient-to-t from-surface/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button class="w-full py-4 bg-on-surface text-surface font-label text-[10px] uppercase tracking-widest rounded-full hover:bg-secondary transition-colors">View Details</button>
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-baseline">
+                            <h3 class="font-headline text-lg italic text-on-surface">${product.name}</h3>
+                            <span class="font-headline text-sm">${product.price}</span>
+                        </div>
                     </div>
                 </div>
-                <div class="space-y-1">
-                    <div class="flex justify-between items-baseline">
-                        <h3 class="font-headline text-lg italic text-on-surface">${product.name}</h3>
-                        <span class="font-headline text-sm">${product.price}</span>
-                    </div>
-                </div>
-            </div>
-            `;
-            grid.innerHTML += html;
+                `;
+                grid.innerHTML += html;
+            }
+        } catch (err) {
+            console.error("Error loading products:", err);
+            grid.innerHTML = '<p class="text-error text-sm col-span-full">Failed to load products. Please refresh.</p>';
         }
     });
 </script>
