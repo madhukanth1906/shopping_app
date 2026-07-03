@@ -1,19 +1,154 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { saveOrder, validateCoupon } from "@/lib/catalog";
+import { getUser } from "@/lib/auth";
+import { account } from "@/lib/appwrite";
+import { useToast } from "@/components/ToastProvider";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function Cart() {
+  const { showToast } = useToast();
+  const router = useRouter();
   const [isCheckout, setIsCheckout] = useState(false);
+  const [cartItems, setCartItems] = useState([]);
+  const [subtotal, setSubtotal] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Checkout Form State
+  const [shipping, setShipping] = useState({
+    fullName: "",
+    address: "",
+    city: "",
+    postalCode: ""
+  });
+  
+  // Saved Addresses State
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
+
+  // Coupon State
+  const [couponCode, setCouponCode] = useState("");
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+
+  useEffect(() => {
+    loadCart();
+    fetchSavedAddresses();
+  }, []);
+
+  const loadCart = () => {
+    const cart = JSON.parse(localStorage.getItem('atelier_cart') || '[]');
+    setCartItems(cart);
+    
+    let total = 0;
+    cart.forEach(item => {
+      const numericStr = (item.price || "").replace(/[^0-9.]/g, '');
+      total += (parseFloat(numericStr) || 0);
+    });
+    setSubtotal(total);
+  };
+
+  const fetchSavedAddresses = async () => {
+    try {
+      const user = await getUser();
+      if (user) {
+        const prefs = await account.getPrefs();
+        if (prefs.addresses) {
+          const addresses = JSON.parse(prefs.addresses);
+          setSavedAddresses(addresses);
+          if (addresses.length > 0) {
+            handleSelectAddress(addresses[0]);
+          }
+        }
+      }
+    } catch (e) {
+      // Guest user or failed to fetch
+    }
+  };
+
+  const handleSelectAddress = (addr) => {
+    setSelectedAddressId(addr.id);
+    setShipping({
+      fullName: addr.fullName,
+      address: addr.address,
+      city: addr.city,
+      postalCode: addr.postalCode
+    });
+  };
+
+  const handleRemove = (index) => {
+    const updated = [...cartItems];
+    updated.splice(index, 1);
+    localStorage.setItem('atelier_cart', JSON.stringify(updated));
+    loadCart();
+  };
+
+  const applyCoupon = async () => {
+    if (!couponCode) return;
+    setIsApplyingCoupon(true);
+    try {
+      const result = await validateCoupon(couponCode.toUpperCase());
+      if (result.valid) {
+        const coupon = result.coupon;
+        if (subtotal < coupon.minPrice) {
+          showToast(`Order must be at least ₹${coupon.minPrice} to use this coupon.`, 'error');
+          setDiscountAmount(0);
+        } else {
+          setDiscountAmount(coupon.discountAmount);
+          showToast('Coupon applied!', 'success');
+        }
+      } else {
+        showToast(result.message, 'error');
+        setDiscountAmount(0);
+      }
+    } catch (err) {
+      showToast('Error applying coupon.', 'error');
+      setDiscountAmount(0);
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  };
+
+  const finalTotal = Math.max(0, subtotal - discountAmount);
+
+  const handleCompleteOrder = async () => {
+    if (!shipping.fullName || !shipping.address || !shipping.city) {
+      showToast("Please fill out your shipping details.", "error");
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      const user = await getUser();
+      const orderPayload = {
+        userId: user ? user.$id : 'guest',
+        items: JSON.stringify(cartItems),
+        total: finalTotal,
+        status: 'Pending',
+        shippingAddress: JSON.stringify(shipping)
+      };
+      
+      await saveOrder(orderPayload);
+      localStorage.removeItem('atelier_cart');
+      showToast("Order placed successfully!", "success");
+      router.push("/");
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to place order.", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <>
       <Navbar />
-      <main className="pt-32 pb-24 px-6 md:px-12 max-w-7xl mx-auto">
+      <main className="pt-32 pb-24 px-6 md:px-12 max-w-7xl mx-auto min-h-screen">
         
-        {/* Progress Steps */}
         <div className="flex justify-center mb-16 space-x-12">
           <div className={`flex items-center gap-3 ${isCheckout ? 'opacity-30' : ''}`}>
             <span className="font-headline text-2xl text-on-surface">01</span>
@@ -26,68 +161,41 @@ export default function Cart() {
         </div>
 
         {!isCheckout ? (
-          /* Cart View */
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
             <div className="lg:col-span-7 space-y-12">
               <h1 className="font-headline text-4xl mb-8">Your Selections</h1>
               
               <div className="space-y-10">
-                {/* Item 1 */}
-                <div className="flex gap-6 pb-10 border-b border-outline-variant/10">
-                  <div className="w-32 h-44 bg-surface-container overflow-hidden rounded-lg">
-                    <img className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpZVLoLhTRdxA5_ON8y2nF7KcgpuOHLlwtv9DLWlLGox65r6DC4GKn7b1hkSG9SZP6rtZxAno78pY-qqeA_me4L3PvIyFx3ABmK595noEFUedXwqk_WrqbQOWON8yypUsaYAwbgNTRHwskGXPvkI8PV4SAVoaW4ZO-9nyMojuuU4HKZnXA0D0K6gEpZfoNe4kL4_V4wCiK6DlA_SIOgABq--OuWK41NzNXAkSM2VOg9SIwQ0ANzB4haSQCuBeQzS_fUGSPg-XiqD8" alt="Dress" />
-                  </div>
-                  <div className="flex-1 flex flex-col justify-between py-2">
-                    <div>
-                      <div className="flex justify-between items-start">
-                        <h3 className="font-semibold uppercase tracking-wider text-xs">Azhagiii Silk Wrap Dress</h3>
-                        <button className="text-outline hover:text-on-surface transition-colors">
-                          <span className="material-symbols-outlined text-sm">close</span>
-                        </button>
+                {cartItems.length === 0 ? (
+                  <p className="text-outline text-sm uppercase tracking-widest">Your shopping bag is empty.</p>
+                ) : (
+                  cartItems.map((item, index) => (
+                    <div key={index} className="flex gap-6 pb-10 border-b border-outline-variant/10">
+                      <div className="w-32 h-44 bg-surface-container overflow-hidden rounded-lg shrink-0">
+                        <img className="w-full h-full object-cover" src={item.image} alt={item.name} />
                       </div>
-                      <p className="text-on-surface-variant text-sm mt-1">Champagne / EU 38</p>
-                      <p className="font-headline text-lg mt-2">₹890.00</p>
-                    </div>
-                    <div className="flex items-center gap-6 mt-4">
-                      <div className="flex items-center border border-outline-variant/20 rounded-full px-4 py-1 gap-4">
-                        <button className="text-xs hover:text-secondary">-</button>
-                        <span className="text-xs font-bold w-4 text-center">1</span>
-                        <button className="text-xs hover:text-secondary">+</button>
+                      <div className="flex-1 flex flex-col justify-between py-2">
+                        <div>
+                          <div className="flex justify-between items-start">
+                            <h3 className="font-semibold uppercase tracking-wider text-xs">{item.name}</h3>
+                            <button onClick={() => handleRemove(index)} className="text-outline hover:text-on-surface transition-colors">
+                              <span className="material-symbols-outlined text-sm">close</span>
+                            </button>
+                          </div>
+                          <p className="text-on-surface-variant text-sm mt-1">{item.size}</p>
+                          <p className="font-headline text-lg mt-2">{item.price}</p>
+                        </div>
+                        <div className="flex items-center gap-6 mt-4">
+                          <div className="flex items-center border border-outline-variant/20 rounded-full px-4 py-1 gap-4">
+                            <span className="text-xs font-bold w-4 text-center">1</span>
+                          </div>
+                        </div>
                       </div>
-                      <button className="text-[10px] uppercase tracking-widest underline underline-offset-4 text-outline hover:text-on-surface">Move to Wishlist</button>
                     </div>
-                  </div>
-                </div>
-
-                {/* Item 2 */}
-                <div className="flex gap-6 pb-10 border-b border-outline-variant/10">
-                  <div className="w-32 h-44 bg-surface-container overflow-hidden rounded-lg">
-                    <img className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCMuk1cWr3DNXXDB-Nczpkw0KFWFTRMNkwCtDrtKj5oXmUYxAtXweMhrcvEASR0Nd6JWupGtAcwfM__CU09nzmMNhhVn8GNcMnn88ll6Tj3YN9lIh_njEbRasGChcL8bU-LI31ugkVFFKx-OAcOOd6jXauhOjkibShn8QdofV55HLMXOpbjCnKGXY_v-f-tHR5KkOdj9YtWlDvtdhDHgpWeF4C7k-qDsFJRewiwjdZTY2EGtWFfhQpucQqzfV4JPxuqaRB328m2rBQ" alt="Clutch" />
-                  </div>
-                  <div className="flex-1 flex flex-col justify-between py-2">
-                    <div>
-                      <div className="flex justify-between items-start">
-                        <h3 className="font-semibold uppercase tracking-wider text-xs">Nocturne Leather Clutch</h3>
-                        <button className="text-outline hover:text-on-surface transition-colors">
-                          <span className="material-symbols-outlined text-sm">close</span>
-                        </button>
-                      </div>
-                      <p className="text-on-surface-variant text-sm mt-1">Mahogany / One Size</p>
-                      <p className="font-headline text-lg mt-2">₹420.00</p>
-                    </div>
-                    <div className="flex items-center gap-6 mt-4">
-                      <div className="flex items-center border border-outline-variant/20 rounded-full px-4 py-1 gap-4">
-                        <button className="text-xs hover:text-secondary">-</button>
-                        <span className="text-xs font-bold w-4 text-center">1</span>
-                        <button className="text-xs hover:text-secondary">+</button>
-                      </div>
-                      <button className="text-[10px] uppercase tracking-widest underline underline-offset-4 text-outline hover:text-on-surface">Move to Wishlist</button>
-                    </div>
-                  </div>
-                </div>
+                  ))
+                )}
               </div>
 
-              {/* Shipping Hint */}
               <div className="bg-surface-container-low p-6 rounded-lg flex items-center gap-4">
                 <span className="material-symbols-outlined text-secondary">local_shipping</span>
                 <p className="text-xs uppercase tracking-wide">Complementary shipping on orders over ₹1,000</p>
@@ -100,7 +208,7 @@ export default function Cart() {
                 <div className="space-y-4 mb-8">
                   <div className="flex justify-between text-sm">
                     <span className="text-on-surface-variant uppercase tracking-wider">Subtotal</span>
-                    <span className="font-headline">₹1,310.00</span>
+                    <span className="font-headline">₹{subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-on-surface-variant uppercase tracking-wider">Shipping</span>
@@ -108,61 +216,83 @@ export default function Cart() {
                   </div>
                   <div className="pt-4 border-t border-outline-variant/10 flex justify-between">
                     <span className="font-bold uppercase tracking-widest text-xs">Total</span>
-                    <span className="font-headline text-2xl">₹1,310.00</span>
-                  </div>
-                </div>
-                
-                {/* Coupon */}
-                <div className="mb-8">
-                  <label className="text-[10px] uppercase tracking-widest font-bold mb-2 block">Promo Code</label>
-                  <div className="flex border-b border-outline-variant/30 focus-within:border-on-surface transition-colors">
-                    <input className="bg-transparent border-none focus:ring-0 w-full text-sm py-2 px-0 tracking-widest placeholder:text-outline-variant/50 outline-none" placeholder="ENTER CODE" type="text" />
-                    <button className="text-[10px] font-bold uppercase tracking-widest hover:text-secondary">Apply</button>
+                    <span className="font-headline text-2xl">₹{subtotal.toFixed(2)}</span>
                   </div>
                 </div>
                 
                 <button 
                   onClick={() => setIsCheckout(true)}
-                  className="w-full bg-on-surface text-surface py-5 rounded-full uppercase tracking-[0.2em] text-xs font-bold hover:bg-secondary transition-all flex items-center justify-center gap-2"
+                  disabled={cartItems.length === 0}
+                  className="w-full bg-on-surface text-surface py-5 rounded-full uppercase tracking-[0.2em] text-xs font-bold hover:bg-secondary transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Proceed to Checkout
                   <span className="material-symbols-outlined text-sm">arrow_forward</span>
                 </button>
-                
-                <div className="mt-8 space-y-4 text-[10px] uppercase tracking-widest text-center text-outline-variant">
-                  <p className="flex items-center justify-center gap-2">
-                    <span className="material-symbols-outlined text-xs">lock</span> Secure Payment Processing
-                  </p>
-                  <p>30-Day Curated Return Policy</p>
-                </div>
               </div>
             </div>
           </div>
         ) : (
-          /* Checkout View */
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 border-t border-outline-variant/10 pt-10">
-            <div className="lg:col-span-7 space-y-20">
+            <div className="lg:col-span-7 space-y-16">
+              
               <section>
-                <h2 className="font-headline text-3xl mb-10">Shipping Details</h2>
+                <div className="flex justify-between items-end mb-6">
+                  <h2 className="font-headline text-3xl">Shipping Details</h2>
+                </div>
+
+                {savedAddresses.length > 0 && (
+                  <div className="mb-10">
+                    <p className="text-[10px] uppercase tracking-widest font-bold mb-4 text-on-surface-variant">Saved Addresses</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {savedAddresses.map(addr => (
+                        <div 
+                          key={addr.id}
+                          onClick={() => handleSelectAddress(addr)}
+                          className={`p-4 rounded-xl border cursor-pointer transition-colors ${selectedAddressId === addr.id ? 'border-primary bg-primary-container/20' : 'border-outline-variant/30 hover:border-on-surface bg-surface-container-low'}`}
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <p className="font-bold text-sm">{addr.fullName}</p>
+                            {selectedAddressId === addr.id && <span className="material-symbols-outlined text-primary text-sm">check_circle</span>}
+                          </div>
+                          <p className="text-xs text-on-surface-variant">{addr.address}</p>
+                          <p className="text-xs text-on-surface-variant">{addr.city}, {addr.postalCode}</p>
+                        </div>
+                      ))}
+                      <div 
+                        onClick={() => { setSelectedAddressId('new'); setShipping({ fullName: '', address: '', city: '', postalCode: '' }); }}
+                        className={`p-4 rounded-xl border border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors ${selectedAddressId === 'new' ? 'border-primary bg-primary-container/10' : 'border-outline-variant hover:border-on-surface'}`}
+                      >
+                        <span className="material-symbols-outlined text-outline">add</span>
+                        <p className="text-xs font-bold uppercase tracking-widest text-outline">New Address</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10">
                   <div className="md:col-span-2">
-                    <label className="text-[10px] uppercase tracking-widest font-bold mb-1 block">Full Name</label>
-                    <input className="w-full bg-transparent border-b border-outline-variant/30 focus:border-on-surface focus:ring-0 border-t-0 border-x-0 px-0 py-3 text-sm tracking-wide outline-none" placeholder="Evelyn Thorne" type="text" />
+                    <label className="text-[10px] uppercase tracking-widest font-bold mb-1 block">Full Name *</label>
+                    <input 
+                      value={shipping.fullName} onChange={e => setShipping({...shipping, fullName: e.target.value})}
+                      className="w-full bg-transparent border-b border-outline-variant/30 focus:border-on-surface focus:ring-0 border-t-0 border-x-0 px-0 py-3 text-sm tracking-wide outline-none" type="text" />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="text-[10px] uppercase tracking-widest font-bold mb-1 block">Address</label>
-                    <input className="w-full bg-transparent border-b border-outline-variant/30 focus:border-on-surface focus:ring-0 border-t-0 border-x-0 px-0 py-3 text-sm tracking-wide outline-none" placeholder="124 Editorial Row, Suite 402" type="text" />
+                    <label className="text-[10px] uppercase tracking-widest font-bold mb-1 block">Address *</label>
+                    <input 
+                      value={shipping.address} onChange={e => setShipping({...shipping, address: e.target.value})}
+                      className="w-full bg-transparent border-b border-outline-variant/30 focus:border-on-surface focus:ring-0 border-t-0 border-x-0 px-0 py-3 text-sm tracking-wide outline-none" type="text" />
                   </div>
                   <div>
-                    <label className="text-[10px] uppercase tracking-widest font-bold mb-1 block">City</label>
-                    <input className="w-full bg-transparent border-b border-outline-variant/30 focus:border-on-surface focus:ring-0 border-t-0 border-x-0 px-0 py-3 text-sm tracking-wide outline-none" placeholder="Milan" type="text" />
+                    <label className="text-[10px] uppercase tracking-widest font-bold mb-1 block">City *</label>
+                    <input 
+                      value={shipping.city} onChange={e => setShipping({...shipping, city: e.target.value})}
+                      className="w-full bg-transparent border-b border-outline-variant/30 focus:border-on-surface focus:ring-0 border-t-0 border-x-0 px-0 py-3 text-sm tracking-wide outline-none" type="text" />
                   </div>
                   <div>
                     <label className="text-[10px] uppercase tracking-widest font-bold mb-1 block">Postal Code</label>
-                    <input className="w-full bg-transparent border-b border-outline-variant/30 focus:border-on-surface focus:ring-0 border-t-0 border-x-0 px-0 py-3 text-sm tracking-wide outline-none" placeholder="20121" type="text" />
-                  </div>
-                  <div className="md:col-span-2 flex justify-end mt-4">
-                    <button className="bg-secondary text-on-secondary px-6 py-2 rounded uppercase tracking-widest text-xs font-bold hover:bg-on-surface transition-all">Save Address</button>
+                    <input 
+                      value={shipping.postalCode} onChange={e => setShipping({...shipping, postalCode: e.target.value})}
+                      className="w-full bg-transparent border-b border-outline-variant/30 focus:border-on-surface focus:ring-0 border-t-0 border-x-0 px-0 py-3 text-sm tracking-wide outline-none" type="text" />
                   </div>
                 </div>
               </section>
@@ -172,45 +302,6 @@ export default function Cart() {
                 <div className="space-y-4">
                   <label className="flex items-center p-6 bg-surface-container-low rounded-lg cursor-pointer border border-transparent hover:border-outline-variant/30 transition-all">
                     <input defaultChecked className="text-on-surface focus:ring-on-surface mr-6 accent-on-surface" name="payment" type="radio" />
-                    <div className="flex-1 flex justify-between items-center">
-                      <div className="flex items-center gap-4">
-                        <span className="material-symbols-outlined text-outline">credit_card</span>
-                        <span className="uppercase tracking-[0.2em] text-[10px] font-bold">Credit / Debit Card</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <div className="w-6 h-4 bg-outline-variant/20 rounded"></div>
-                        <div className="w-6 h-4 bg-outline-variant/20 rounded"></div>
-                      </div>
-                    </div>
-                  </label>
-                  
-                  <div className="px-6 py-8 bg-surface-container-low/50 rounded-lg space-y-6 mt-[-1rem]">
-                    <div className="relative">
-                      <label className="text-[9px] uppercase tracking-widest font-bold mb-1 block">Card Number</label>
-                      <input className="w-full bg-transparent border-b border-outline-variant/30 focus:border-on-surface focus:ring-0 border-t-0 border-x-0 px-0 py-2 text-sm outline-none" placeholder="XXXX XXXX XXXX 4421" type="text" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-8">
-                      <div>
-                        <label className="text-[9px] uppercase tracking-widest font-bold mb-1 block">Expiry</label>
-                        <input className="w-full bg-transparent border-b border-outline-variant/30 focus:border-on-surface focus:ring-0 border-t-0 border-x-0 px-0 py-2 text-sm outline-none" placeholder="MM/YY" type="text" />
-                      </div>
-                      <div>
-                        <label className="text-[9px] uppercase tracking-widest font-bold mb-1 block">CVV</label>
-                        <input className="w-full bg-transparent border-b border-outline-variant/30 focus:border-on-surface focus:ring-0 border-t-0 border-x-0 px-0 py-2 text-sm outline-none" placeholder="***" type="password" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <label className="flex items-center p-6 bg-surface-container-low rounded-lg cursor-pointer border border-transparent hover:border-outline-variant/30 transition-all">
-                    <input className="text-on-surface focus:ring-on-surface mr-6 accent-on-surface" name="payment" type="radio" />
-                    <div className="flex-1 flex items-center gap-4">
-                      <span className="material-symbols-outlined text-outline">account_balance</span>
-                      <span className="uppercase tracking-[0.2em] text-[10px] font-bold">UPI / Digital Wallet</span>
-                    </div>
-                  </label>
-
-                  <label className="flex items-center p-6 bg-surface-container-low rounded-lg cursor-pointer border border-transparent hover:border-outline-variant/30 transition-all">
-                    <input className="text-on-surface focus:ring-on-surface mr-6 accent-on-surface" name="payment" type="radio" />
                     <div className="flex-1 flex items-center gap-4">
                       <span className="material-symbols-outlined text-outline">payments</span>
                       <span className="uppercase tracking-[0.2em] text-[10px] font-bold">Cash on Delivery</span>
@@ -223,49 +314,66 @@ export default function Cart() {
             <div className="lg:col-span-5">
               <div className="bg-surface-container-lowest p-8 lg:p-12 rounded-lg border border-outline-variant/10 sticky top-32">
                 <h2 className="font-headline text-2xl mb-8">Review Order</h2>
-                <div className="space-y-6 mb-10">
-                  <div className="flex gap-4">
-                    <div className="w-16 h-20 bg-surface-container rounded-lg shrink-0">
-                      <img className="w-full h-full object-cover rounded-lg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDchHsf0CeSf4fd42S_dyPKP8t6Ug4136l5ZANU9cTJXgBR5mkwrZfZdeJUdQ6oPsWZuqkMqFXigHuFOUIF0_q84PR8XkQBlLWWlDU3doaKB2u99Qv19eq03JxcSzcd1UnzsejUoq5tgw-dTXMaQj6ch52Mabc9iwOx5D_48hm0n0lRzmUqudC3ffbNO--gfD0dYh6Jm-m-i9u00ziK0rrTAc8ycZ8nvtu5P8BxH-4I2L6Bca6OQ782f9qfZ5EeYc3Z6rFv6Uh2yM" alt="Dress Detail" />
+                <div className="space-y-6 mb-10 max-h-64 overflow-y-auto pr-2">
+                  {cartItems.map((item, i) => (
+                    <div key={i} className="flex gap-4">
+                      <div className="w-16 h-20 bg-surface-container rounded-lg shrink-0">
+                        <img className="w-full h-full object-cover rounded-lg" src={item.image} alt={item.name} />
+                      </div>
+                      <div className="flex-1 text-[10px] uppercase tracking-widest">
+                        <p className="font-bold">{item.name}</p>
+                        <p className="text-outline-variant mt-1">{item.size}</p>
+                        <p className="mt-2 font-headline text-sm normal-case font-normal">{item.price}</p>
+                      </div>
                     </div>
-                    <div className="flex-1 text-[10px] uppercase tracking-widest">
-                      <p className="font-bold">Azhagiii Silk Wrap Dress</p>
-                      <p className="text-outline-variant mt-1">EU 38</p>
-                      <p className="mt-2 font-headline text-sm normal-case font-normal">₹890.00</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-4">
-                    <div className="w-16 h-20 bg-surface-container rounded-lg shrink-0">
-                      <img className="w-full h-full object-cover rounded-lg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtZlaxTNYScjDsiGKgBrzocpetX9BW6OVAzqfktjePslq4HtzcKcNza3yx8m3H-J2x02l04C1Z0xHFSn0dipDXHYl6kjZv4-6eSEoEqflspN138Hc30VtjbtiLp4gQ3UBCC8hYGQn7EJoZTtdXUL7QnVGlQqIAl1XX7GDipE9vAM3HdyKK0lBd5VFGOOi--fNmYWsgBF3DidtZKs1Lk0CtNCOjiN3MmM0Jh8FZjowvBLnvPaY0fiA4Eou5ooTpaOcdSTnKoz8iRbs" alt="Clutch Detail" />
-                    </div>
-                    <div className="flex-1 text-[10px] uppercase tracking-widest">
-                      <p className="font-bold">Nocturne Leather Clutch</p>
-                      <p className="text-outline-variant mt-1">One Size</p>
-                      <p className="mt-2 font-headline text-sm normal-case font-normal">₹420.00</p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
                 
+                {/* Coupon Code Section */}
+                <div className="mb-8 flex gap-2">
+                  <input 
+                    type="text" 
+                    placeholder="Enter Coupon Code" 
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value)}
+                    className="flex-1 bg-surface-container border border-outline-variant/30 rounded px-4 py-2 text-sm uppercase focus:outline-none focus:border-on-surface"
+                  />
+                  <button 
+                    onClick={applyCoupon}
+                    disabled={isApplyingCoupon || !couponCode}
+                    className="px-4 py-2 bg-on-surface text-surface text-xs font-bold uppercase tracking-widest rounded disabled:opacity-50"
+                  >
+                    Apply
+                  </button>
+                </div>
+
                 <div className="space-y-4 mb-10 pt-6 border-t border-outline-variant/10">
                   <div className="flex justify-between text-sm">
                     <span className="text-on-surface-variant uppercase tracking-wider text-[10px]">Subtotal</span>
-                    <span className="font-headline text-base">₹1,310.00</span>
+                    <span className="font-headline text-base">₹{subtotal.toFixed(2)}</span>
                   </div>
+                  {discountAmount > 0 && (
+                    <div className="flex justify-between text-sm text-secondary">
+                      <span className="uppercase tracking-wider text-[10px]">Discount</span>
+                      <span className="font-headline text-base">- ₹{discountAmount.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm">
                     <span className="text-on-surface-variant uppercase tracking-wider text-[10px]">Shipping</span>
                     <span className="font-headline text-base">FREE</span>
                   </div>
                   <div className="pt-4 border-t border-outline-variant/10 flex justify-between">
                     <span className="font-bold uppercase tracking-[0.2em] text-xs">Final Amount</span>
-                    <span className="font-headline text-3xl">₹1,310.00</span>
+                    <span className="font-headline text-3xl">₹{finalTotal.toFixed(2)}</span>
                   </div>
                 </div>
                 
                 <button 
-                  onClick={() => setIsCheckout(false)}
-                  className="w-full bg-secondary text-on-secondary py-5 rounded-full uppercase tracking-[0.2em] text-xs font-bold hover:bg-on-surface transition-all"
+                  onClick={handleCompleteOrder}
+                  disabled={isSubmitting}
+                  className="w-full bg-secondary text-on-secondary py-5 rounded-full uppercase tracking-[0.2em] text-xs font-bold hover:bg-on-surface transition-all disabled:opacity-50"
                 >
-                  Complete Order
+                  {isSubmitting ? 'Processing...' : 'Complete Order'}
                 </button>
               </div>
             </div>

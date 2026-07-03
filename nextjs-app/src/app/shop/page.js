@@ -14,15 +14,19 @@ export default function Shop() {
 
   // Filter & Sort State
   const [selectedSizes, setSelectedSizes] = useState([]);
-  const [maxPrice, setMaxPrice] = useState(1000);
+  const [maxPrice, setMaxPrice] = useState(1500);
   const [sortOption, setSortOption] = useState("Newest Arrivals");
+  const [isSortOpen, setIsSortOpen] = useState(false);
+  
+  const [selectedOccasions, setSelectedOccasions] = useState([]);
+  const [selectedColors, setSelectedColors] = useState([]);
+  const [selectedFabrics, setSelectedFabrics] = useState([]);
 
   useEffect(() => {
     async function load() {
       try {
         setError(null);
         const allProducts = await fetchProducts();
-        // Check if fetchProducts silently failed and returned empty object when it shouldn't
         if (allProducts instanceof Error) {
             throw allProducts;
         }
@@ -37,10 +41,8 @@ export default function Shop() {
     load();
   }, []);
 
-  const toggleSize = (size) => {
-    setSelectedSizes(prev => 
-      prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size]
-    );
+  const toggleFilter = (setState, val) => {
+    setState(prev => prev.includes(val) ? prev.filter(v => v !== val) : [...prev, val]);
   };
 
   const parsePrice = (priceStr) => {
@@ -51,12 +53,16 @@ export default function Shop() {
 
   let filteredProducts = Object.values(products).filter(product => {
     const pSize = product.size || 'One Size';
-    const matchSize = selectedSizes.length === 0 || selectedSizes.includes(pSize);
+    const matchSize = selectedSizes.length === 0 || selectedSizes.includes(pSize) || selectedSizes.some(s => pSize.includes(s));
     
     const priceNum = parsePrice(product.price);
     const matchPrice = priceNum <= maxPrice;
 
-    return matchSize && matchPrice;
+    const matchOccasion = selectedOccasions.length === 0 || (product.occasion && selectedOccasions.includes(product.occasion));
+    const matchColor = selectedColors.length === 0 || (product.color && selectedColors.includes(product.color));
+    const matchFabric = selectedFabrics.length === 0 || (product.fabric && selectedFabrics.includes(product.fabric));
+
+    return matchSize && matchPrice && matchOccasion && matchColor && matchFabric;
   });
 
   if (sortOption === "Price: Low to High") {
@@ -70,24 +76,24 @@ export default function Shop() {
   return (
     <>
       <Navbar />
-      <main className="pt-32 pb-20 px-6 md:px-12 max-w-[1920px] mx-auto">
+      <main className="pt-32 pb-20 px-6 md:px-12 max-w-[1920px] mx-auto min-h-screen">
         {/* Breadcrumbs */}
         <nav className="flex items-center gap-2 mb-8 font-label text-[10px] uppercase tracking-[0.2em] text-outline">
           <Link className="hover:text-on-surface transition-colors" href="/">Home</Link>
           <span className="material-symbols-outlined text-[12px]">chevron_right</span>
           <Link className="hover:text-on-surface transition-colors" href="/shop">Shop</Link>
           <span className="material-symbols-outlined text-[12px]">chevron_right</span>
-          <span className="text-on-surface">Summer Dresses</span>
+          <span className="text-on-surface">Collection</span>
         </nav>
 
         {/* Header Section */}
         <div className="mb-16">
-          <h1 className="font-headline text-5xl md:text-7xl italic text-on-surface mb-4">Summer <span className="font-normal not-italic">Refinement</span></h1>
+          <h1 className="font-headline text-5xl md:text-7xl italic text-on-surface mb-4">The <span className="font-normal not-italic">Collection</span></h1>
           <p className="font-body text-outline max-w-xl leading-relaxed">Curated silhouettes designed for the discerning minimalist. Each piece in our collection is a testament to timeless craftsmanship and ethereal movement.</p>
         </div>
 
         {/* Sorting & Filter Mobile Toggle */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12 border-b border-outline-variant/10 pb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12 border-b border-outline-variant/10 pb-6 relative">
           <div className="flex items-center gap-8">
             <button className="md:hidden flex items-center gap-2 font-label text-xs uppercase tracking-widest text-on-surface">
               <span className="material-symbols-outlined">tune</span> Filters
@@ -97,18 +103,31 @@ export default function Shop() {
             </div>
           </div>
           <div className="flex items-center justify-between md:justify-end gap-12">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4 relative">
               <label className="font-label text-[10px] uppercase tracking-widest text-outline">Sort By:</label>
-              <select 
-                value={sortOption} 
-                onChange={(e) => setSortOption(e.target.value)} 
-                className="bg-transparent border-none focus:ring-0 font-label text-xs uppercase tracking-widest cursor-pointer text-on-surface pr-8"
-              >
-                <option>Newest Arrivals</option>
-                <option>Price: Low to High</option>
-                <option>Price: High to Low</option>
-                <option>Popularity</option>
-              </select>
+              
+              <div className="relative">
+                <button 
+                  onClick={() => setIsSortOpen(!isSortOpen)}
+                  className="flex items-center gap-2 bg-transparent border-none font-label text-xs uppercase tracking-widest cursor-pointer text-on-surface hover:text-secondary transition-colors"
+                >
+                  {sortOption} <span className="material-symbols-outlined text-[16px]">{isSortOpen ? 'expand_less' : 'expand_more'}</span>
+                </button>
+                
+                {isSortOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-surface-container-lowest border border-outline-variant/20 shadow-xl rounded z-50 py-2">
+                    {["Newest Arrivals", "Price: Low to High", "Price: High to Low", "Popularity"].map(opt => (
+                      <button
+                        key={opt}
+                        onClick={() => { setSortOption(opt); setIsSortOpen(false); }}
+                        className={`block w-full text-left px-4 py-2 font-label text-xs uppercase tracking-widest hover:bg-surface-container-low transition-colors ${sortOption === opt ? 'bg-secondary text-surface hover:bg-secondary' : 'text-on-surface'}`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-4">
               <button className="material-symbols-outlined text-outline hover:text-on-surface transition-colors">grid_view</button>
@@ -117,26 +136,27 @@ export default function Shop() {
           </div>
         </div>
 
-        <div className="flex gap-16">
+        <div className="flex gap-16 relative">
           {/* Sidebar Filters */}
           <aside className="hidden md:block w-64 flex-shrink-0">
             <div className="space-y-10 sticky top-32">
-              {/* Occasion (Mock) */}
+              {/* Occasion */}
               <div>
                 <h3 className="font-label text-xs uppercase tracking-[0.2em] text-on-surface font-bold mb-6">Occasion</h3>
                 <div className="space-y-3">
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <input className="w-4 h-4 rounded-sm border-outline-variant text-secondary focus:ring-secondary-container" type="checkbox" />
-                    <span className="font-label text-sm text-outline group-hover:text-on-surface transition-colors">Garden Party</span>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <input className="w-4 h-4 rounded-sm border-outline-variant text-secondary focus:ring-secondary-container" type="checkbox" />
-                    <span className="font-label text-sm text-outline group-hover:text-on-surface transition-colors">Bridal Guest</span>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <input className="w-4 h-4 rounded-sm border-outline-variant text-secondary focus:ring-secondary-container" type="checkbox" />
-                    <span className="font-label text-sm text-outline group-hover:text-on-surface transition-colors">Summer Soirée</span>
-                  </label>
+                  {['Garden Party', 'Bridal Guest', 'Summer Soirée'].map(occ => (
+                    <label key={occ} className="flex items-center gap-3 cursor-pointer group">
+                      <input 
+                        type="checkbox" 
+                        checked={selectedOccasions.includes(occ)}
+                        onChange={() => toggleFilter(setSelectedOccasions, occ)}
+                        className="w-4 h-4 rounded-sm border-outline-variant text-secondary focus:ring-secondary-container" 
+                      />
+                      <span className={`font-label text-sm transition-colors ${selectedOccasions.includes(occ) ? 'text-on-surface font-bold' : 'text-outline group-hover:text-on-surface'}`}>
+                        {occ}
+                      </span>
+                    </label>
+                  ))}
                 </div>
               </div>
               
@@ -147,11 +167,11 @@ export default function Shop() {
                   {['XS', 'S', 'M', 'L', 'XL'].map(size => (
                     <button 
                       key={size}
-                      onClick={() => toggleSize(size)}
+                      onClick={() => toggleFilter(setSelectedSizes, size)}
                       className={`py-2 text-[10px] border transition-colors font-label ${
                         selectedSizes.includes(size) 
                           ? 'border-on-surface bg-on-surface text-white' 
-                          : 'border-outline-variant/30 hover:border-on-surface'
+                          : 'border-outline-variant/30 hover:border-on-surface text-on-surface'
                       }`}
                     >
                       {size}
@@ -160,15 +180,29 @@ export default function Shop() {
                 </div>
               </div>
               
-              {/* Color Palette (Mock) */}
+              {/* Color Palette */}
               <div>
                 <h3 className="font-label text-xs uppercase tracking-[0.2em] text-on-surface font-bold mb-6">Color Palette</h3>
                 <div className="flex flex-wrap gap-4">
-                  <button className="w-6 h-6 rounded-full bg-[#f4ece1] border border-outline-variant/20 focus:ring-1 focus:ring-offset-2 focus:ring-on-surface" title="Cream"></button>
-                  <button className="w-6 h-6 rounded-full bg-[#ead8c7] border border-outline-variant/20" title="Blush"></button>
-                  <button className="w-6 h-6 rounded-full bg-[#7e572e] border border-outline-variant/20" title="Terra"></button>
-                  <button className="w-6 h-6 rounded-full bg-[#303331] border border-outline-variant/20" title="Soft Black"></button>
-                  <button className="w-6 h-6 rounded-full bg-[#ffffff] border border-outline-variant/50" title="Pure White"></button>
+                  {[
+                    {name: 'Cream', hex: '#f4ece1'},
+                    {name: 'Blush', hex: '#ead8c7'},
+                    {name: 'Terra', hex: '#7e572e'},
+                    {name: 'Soft Black', hex: '#303331'},
+                    {name: 'Pure White', hex: '#ffffff'}
+                  ].map(c => (
+                    <button 
+                      key={c.name}
+                      onClick={() => toggleFilter(setSelectedColors, c.name)}
+                      title={c.name}
+                      style={{ backgroundColor: c.hex }}
+                      className={`w-6 h-6 rounded-full border transition-all ${
+                        selectedColors.includes(c.name) 
+                          ? 'border-secondary ring-2 ring-offset-2 ring-secondary scale-110' 
+                          : 'border-outline-variant/30 hover:scale-110'
+                      }`}
+                    />
+                  ))}
                 </div>
               </div>
               
@@ -178,37 +212,42 @@ export default function Shop() {
                 <input 
                   type="range" 
                   min="0" 
-                  max="1500"
-                  step="50"
+                  max="5000"
+                  step="100"
                   value={maxPrice}
                   onChange={(e) => setMaxPrice(parseInt(e.target.value))}
                   className="w-full accent-secondary" 
                 />
                 <div className="flex justify-between mt-2 font-label text-[10px] text-outline tracking-wider">
                   <span>₹0</span>
-                  <span>₹1,500+</span>
+                  <span>₹5,000+</span>
                 </div>
               </div>
               
-              {/* Fabric (Mock) */}
+              {/* Fabric */}
               <div>
                 <h3 className="font-label text-xs uppercase tracking-[0.2em] text-on-surface font-bold mb-6">Fabric</h3>
                 <div className="space-y-3">
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <input className="w-4 h-4 rounded-sm border-outline-variant text-secondary focus:ring-secondary-container" type="checkbox" />
-                    <span className="font-label text-sm text-outline group-hover:text-on-surface transition-colors">Organic Silk</span>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <input className="w-4 h-4 rounded-sm border-outline-variant text-secondary focus:ring-secondary-container" type="checkbox" />
-                    <span className="font-label text-sm text-outline group-hover:text-on-surface transition-colors">Linen Blend</span>
-                  </label>
+                  {['Organic Silk', 'Linen Blend'].map(fab => (
+                    <label key={fab} className="flex items-center gap-3 cursor-pointer group">
+                      <input 
+                        type="checkbox" 
+                        checked={selectedFabrics.includes(fab)}
+                        onChange={() => toggleFilter(setSelectedFabrics, fab)}
+                        className="w-4 h-4 rounded-sm border-outline-variant text-secondary focus:ring-secondary-container" 
+                      />
+                      <span className={`font-label text-sm transition-colors ${selectedFabrics.includes(fab) ? 'text-on-surface font-bold' : 'text-outline group-hover:text-on-surface'}`}>
+                        {fab}
+                      </span>
+                    </label>
+                  ))}
                 </div>
               </div>
             </div>
           </aside>
 
           {/* Product Grid */}
-          <div className="flex-grow">
+          <div className="flex-grow z-0">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-16 gap-x-8">
               {loading && <p className="text-outline text-sm col-span-full">Loading products...</p>}
               
@@ -223,7 +262,7 @@ export default function Shop() {
               )}
               
               {!loading && !error && filteredProducts.length === 0 && (
-                <p className="text-outline text-sm col-span-full">No products match your current filters.</p>
+                <p className="text-outline text-sm col-span-full mt-10">No products match your current filters.</p>
               )}
               
               {!loading && !error && filteredProducts.map(product => (
@@ -231,20 +270,6 @@ export default function Shop() {
               ))}
             </div>
           </div>
-        </div>
-
-        {/* Pagination (Mock) */}
-        <div className="mt-24 flex items-center justify-center gap-4">
-          <button className="w-10 h-10 flex items-center justify-center text-outline hover:text-on-surface transition-colors">
-            <span className="material-symbols-outlined">arrow_back_ios</span>
-          </button>
-          <div className="flex items-center gap-1">
-            <button className="w-10 h-10 font-label text-xs border border-on-surface bg-on-surface text-surface rounded-full">1</button>
-            <button className="w-10 h-10 font-label text-xs hover:bg-surface-container-low transition-colors rounded-full text-outline">2</button>
-          </div>
-          <button className="w-10 h-10 flex items-center justify-center text-outline hover:text-on-surface transition-colors">
-            <span className="material-symbols-outlined">arrow_forward_ios</span>
-          </button>
         </div>
       </main>
       <Footer />

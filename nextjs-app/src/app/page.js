@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Link from "next/link";
+import { useToast } from "@/components/ToastProvider";
 import { fetchProducts } from "@/lib/catalog";
 
 export default function Home() {
+  const { showToast } = useToast();
   const [featured, setFeatured] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -108,11 +110,28 @@ export default function Home() {
               {!loading && featured.length === 0 && <p className="text-outline text-sm">No products available at the moment. Please check back later!</p>}
               {!loading && featured.map(([id, product]) => {
                 const imgUrl = Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : product.image;
+                
+                const handleWishlist = (e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  const wishlist = JSON.parse(localStorage.getItem('atelier_wishlist') || '[]');
+                  if (!wishlist.find(item => item.id === product.id)) {
+                    wishlist.push({ id: product.id, name: product.name, price: product.price, image: imgUrl });
+                    localStorage.setItem('atelier_wishlist', JSON.stringify(wishlist));
+                    showToast(`${product.name} added to wishlist!`, "success");
+                  } else {
+                    showToast(`${product.name} is already in your wishlist.`, "error");
+                  }
+                };
+
                 return (
-                  <div key={id} className="min-w-[320px] snap-start group relative cursor-pointer" onClick={() => window.location.href=`/product/${id}`}>
-                    <div className="aspect-[3/4] overflow-hidden rounded-lg bg-surface-container mb-4">
+                  <div key={id} className="min-w-[320px] w-[320px] max-w-[320px] snap-start group relative cursor-pointer" onClick={() => window.location.href=`/product/${id}`}>
+                    <div className="aspect-[3/4] overflow-hidden rounded-lg bg-surface-container mb-4 relative">
                         <img className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src={imgUrl} />
-                        <button className="absolute bottom-20 left-1/2 -translate-x-1/2 bg-surface/90 backdrop-blur opacity-0 group-hover:opacity-100 transition-all duration-300 py-3 px-8 rounded-full font-label text-[10px] uppercase tracking-widest shadow-lg">
+                        <button onClick={handleWishlist} className="absolute top-4 right-4 p-2 bg-surface/80 backdrop-blur-sm rounded-full text-on-surface hover:bg-on-surface hover:text-surface transition-all z-10">
+                          <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 0" }}>favorite</span>
+                        </button>
+                        <button className="absolute bottom-20 left-1/2 -translate-x-1/2 bg-surface/90 backdrop-blur opacity-0 group-hover:opacity-100 transition-all duration-300 py-3 px-8 rounded-full font-label text-[10px] uppercase tracking-widest shadow-lg z-10">
                             Quick Add
                         </button>
                     </div>

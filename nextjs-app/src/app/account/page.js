@@ -4,17 +4,41 @@ import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { getUser, loginWithGoogle, logout } from "@/lib/auth";
+import { fetchUserOrders } from "@/lib/catalog";
+import { account } from "@/lib/appwrite";
+import { useToast } from "@/components/ToastProvider";
 import Link from "next/link";
+import { ID } from "appwrite";
 
 export default function Account() {
+  const { showToast } = useToast();
   const [user, setUser] = useState(null);
+  const [orders, setOrders] = useState([]);
+  const [wishlist, setWishlist] = useState([]);
+  const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('dashboard');
+
+  const [newAddress, setNewAddress] = useState({ fullName: '', address: '', city: '', postalCode: '' });
+  const [isAddingAddress, setIsAddingAddress] = useState(false);
 
   useEffect(() => {
     async function fetchUser() {
       try {
+        const w = JSON.parse(localStorage.getItem('atelier_wishlist') || '[]');
+        setWishlist(w);
+        
         const u = await getUser();
         setUser(u);
+        if (u) {
+            const userOrders = await fetchUserOrders(u.$id);
+            setOrders(userOrders);
+
+            const prefs = await account.getPrefs();
+            if (prefs.addresses) {
+              setAddresses(JSON.parse(prefs.addresses));
+            }
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -27,8 +51,9 @@ export default function Account() {
   const handleLogin = async () => {
     try {
       await loginWithGoogle();
-    } catch (e) {
-      alert('Failed to login with Google.');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to login with Google.', 'error');
     }
   };
 
@@ -39,6 +64,34 @@ export default function Account() {
       window.location.reload();
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const handleSaveAddress = async (e) => {
+    e.preventDefault();
+    try {
+      const addrWithId = { ...newAddress, id: ID.unique() };
+      const updatedAddresses = [...addresses, addrWithId];
+      await account.updatePrefs({ addresses: JSON.stringify(updatedAddresses) });
+      setAddresses(updatedAddresses);
+      setNewAddress({ fullName: '', address: '', city: '', postalCode: '' });
+      setIsAddingAddress(false);
+      showToast('Address saved successfully!', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to save address.', 'error');
+    }
+  };
+
+  const handleDeleteAddress = async (id) => {
+    try {
+      const updatedAddresses = addresses.filter(a => a.id !== id);
+      await account.updatePrefs({ addresses: JSON.stringify(updatedAddresses) });
+      setAddresses(updatedAddresses);
+      showToast('Address deleted.', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to delete address.', 'error');
     }
   };
 
@@ -54,13 +107,52 @@ export default function Account() {
     );
   }
 
+  const renderOrderTable = (orderList) => (
+    <div className="bg-surface-container-lowest rounded-xl overflow-hidden">
+      <div className="overflow-x-auto no-scrollbar">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="text-[10px] uppercase tracking-widest text-outline bg-surface-container-low/50">
+              <th className="px-6 py-4 font-medium">Order ID</th>
+              <th className="px-6 py-4 font-medium">Date</th>
+              <th className="px-6 py-4 font-medium">Status</th>
+              <th className="px-6 py-4 font-medium text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-outline-variant/5">
+            {orderList.length === 0 ? (
+              <tr><td colSpan="4" className="px-6 py-5 text-sm text-outline">No orders found.</td></tr>
+            ) : (
+              orderList.map(order => {
+                  const date = new Date(order.$createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                  let statusColor = 'bg-surface-container-high text-on-surface-variant';
+                  if (order.status === 'Shipped') statusColor = 'bg-secondary-container text-on-secondary-container';
+                  if (order.status === 'Cancelled') statusColor = 'bg-error-container/20 text-error';
+
+                  return (
+                    <tr key={order.$id} className="text-sm hover:bg-surface-container-low/20 transition-colors">
+                      <td className="px-6 py-5 font-['Noto_Serif'] font-bold uppercase tracking-tighter">#{order.$id.slice(-6)}</td>
+                      <td className="px-6 py-5 text-on-surface-variant">{date}</td>
+                      <td className="px-6 py-5">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest ${statusColor}`}>{order.status}</span>
+                      </td>
+                      <td className="px-6 py-5 text-right font-semibold">₹{order.total.toFixed(2)}</td>
+                    </tr>
+                  );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
   return (
     <div className="bg-background min-h-screen flex flex-col">
       <Navbar />
       
       <main className="pt-32 pb-20 px-6 md:px-12 max-w-[1440px] mx-auto flex flex-col gap-12 flex-grow w-full">
         {!user ? (
-          /* Login View */
           <div className="w-full flex flex-col items-center justify-center flex-grow text-center space-y-6">
             <h1 className="text-4xl md:text-5xl font-['Noto_Serif'] italic tracking-tight text-on-surface">Sign In</h1>
             <p className="text-on-surface-variant font-['Manrope'] text-sm tracking-wide max-w-md mx-auto">
@@ -80,33 +172,27 @@ export default function Account() {
             </button>
           </div>
         ) : (
-          /* Dashboard View */
           <div className="w-full flex flex-col md:flex-row gap-12">
             
-            {/* Sidebar Navigation */}
-            <aside className="w-full md:w-64 flex flex-col gap-8">
+            <aside className="w-full md:w-64 flex flex-col gap-8 shrink-0">
               <div className="space-y-1">
                 <h2 className="font-['Manrope'] uppercase tracking-[0.15em] text-[10px] text-outline mb-6">Account Menu</h2>
                 <nav className="flex flex-col gap-2">
-                  <Link className="flex items-center gap-3 px-4 py-3 bg-primary-container text-on-primary-container rounded-lg font-semibold transition-all" href="/account">
+                  <button onClick={() => setActiveTab('dashboard')} className={`flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-all ${activeTab === 'dashboard' ? 'bg-primary-container text-on-primary-container' : 'text-on-surface hover:bg-surface-container-low'}`}>
                     <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>dashboard</span>
                     <span className="text-sm">Dashboard</span>
-                  </Link>
-                  <Link className="flex items-center gap-3 px-4 py-3 text-on-surface hover:bg-surface-container-low rounded-lg transition-all" href="/account">
+                  </button>
+                  <button onClick={() => setActiveTab('history')} className={`flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-all ${activeTab === 'history' ? 'bg-primary-container text-on-primary-container' : 'text-on-surface hover:bg-surface-container-low'}`}>
                     <span className="material-symbols-outlined">history</span>
                     <span className="text-sm">Order History</span>
-                  </Link>
+                  </button>
+                  <button onClick={() => setActiveTab('addresses')} className={`flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-all ${activeTab === 'addresses' ? 'bg-primary-container text-on-primary-container' : 'text-on-surface hover:bg-surface-container-low'}`}>
+                    <span className="material-symbols-outlined">location_on</span>
+                    <span className="text-sm">Saved Addresses</span>
+                  </button>
                   <Link className="flex items-center gap-3 px-4 py-3 text-on-surface hover:bg-surface-container-low rounded-lg transition-all" href="/shop">
                     <span className="material-symbols-outlined">favorite</span>
                     <span className="text-sm">Wishlist</span>
-                  </Link>
-                  <Link className="flex items-center gap-3 px-4 py-3 text-on-surface hover:bg-surface-container-low rounded-lg transition-all" href="/account">
-                    <span className="material-symbols-outlined">location_on</span>
-                    <span className="text-sm">Saved Addresses</span>
-                  </Link>
-                  <Link className="flex items-center gap-3 px-4 py-3 text-on-surface hover:bg-surface-container-low rounded-lg transition-all" href="/account">
-                    <span className="material-symbols-outlined">settings</span>
-                    <span className="text-sm">Profile Settings</span>
                   </Link>
                   {user?.email === 'madhu9940984501@gmail.com' && (
                     <Link className="flex items-center gap-3 px-4 py-3 text-secondary hover:bg-secondary-container/30 rounded-lg font-bold transition-all mt-4 border border-secondary/30" href="/admin">
@@ -123,140 +209,127 @@ export default function Account() {
                   </button>
                 </nav>
               </div>
-              <div className="mt-auto p-6 bg-surface-container-low rounded-xl">
-                <p className="text-xs text-outline mb-2">Need assistance?</p>
-                <Link className="text-sm font-semibold underline decoration-primary/30 hover:decoration-primary" href="/account">Contact Concierge</Link>
-              </div>
             </aside>
 
-            {/* Canvas Area */}
             <section className="flex-1 flex flex-col gap-12">
-              {/* Welcome Header */}
-              <div className="space-y-2">
+              <div className="space-y-2 border-b border-outline-variant/10 pb-6">
                 <h1 className="text-4xl md:text-5xl font-['Noto_Serif'] italic tracking-tight text-on-surface">Welcome back, <span className="font-normal not-italic">{user.name || 'User'}</span></h1>
                 <p className="text-on-surface-variant font-['Manrope'] text-sm tracking-wide">{user.email}</p>
               </div>
 
-              {/* Recent Orders (List View) */}
-              <div className="space-y-6">
-                <div className="flex justify-between items-end border-b border-outline-variant/10 pb-4">
-                  <h3 className="font-['Manrope'] uppercase tracking-widest text-xs font-bold text-on-surface">Recent Orders</h3>
-                  <Link className="text-xs text-secondary font-semibold hover:underline" href="/account">View All</Link>
-                </div>
-                <div className="bg-surface-container-lowest rounded-xl overflow-hidden">
-                  <div className="overflow-x-auto no-scrollbar">
-                    <table className="w-full text-left">
-                      <thead>
-                        <tr className="text-[10px] uppercase tracking-widest text-outline bg-surface-container-low/50">
-                          <th className="px-6 py-4 font-medium">Order ID</th>
-                          <th className="px-6 py-4 font-medium">Date</th>
-                          <th className="px-6 py-4 font-medium">Status</th>
-                          <th className="px-6 py-4 font-medium text-right">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-outline-variant/5">
-                        <tr className="text-sm hover:bg-surface-container-low/20 transition-colors">
-                          <td className="px-6 py-5 font-['Noto_Serif'] font-bold">#AT-82910</td>
-                          <td className="px-6 py-5 text-on-surface-variant">March 14, 2024</td>
-                          <td className="px-6 py-5">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-secondary-container text-on-secondary-container">IN TRANSIT</span>
-                          </td>
-                          <td className="px-6 py-5 text-right">
-                            <button className="text-xs font-bold uppercase tracking-tighter text-on-surface border-b border-on-surface/20 hover:border-on-surface pb-0.5 transition-all">Track Order</button>
-                          </td>
-                        </tr>
-                        <tr className="text-sm hover:bg-surface-container-low/20 transition-colors">
-                          <td className="px-6 py-5 font-['Noto_Serif'] font-bold">#AT-71022</td>
-                          <td className="px-6 py-5 text-on-surface-variant">February 28, 2024</td>
-                          <td className="px-6 py-5">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-surface-container-high text-on-surface-variant">DELIVERED</span>
-                          </td>
-                          <td className="px-6 py-5 text-right">
-                            <button className="text-xs font-bold uppercase tracking-tighter text-on-surface border-b border-on-surface/20 hover:border-on-surface pb-0.5 transition-all">Details</button>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-
-              {/* Wishlist (Bento/Grid View) */}
-              <div className="space-y-6">
-                <div className="flex justify-between items-end border-b border-outline-variant/10 pb-4">
-                  <h3 className="font-['Manrope'] uppercase tracking-widest text-xs font-bold text-on-surface">Curated Wishlist</h3>
-                  <span className="text-[10px] text-outline">2 ITEMS SAVED</span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  {/* Wishlist Item 1 */}
-                  <div className="group relative flex flex-col gap-4">
-                    <div className="aspect-[4/5] overflow-hidden rounded-lg bg-surface-container-low">
-                      <img alt="Silk midi dress" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCACuYMWFMTQkWnwJ0u2UTRyWPAoM8wrZU0fe64f2jwts1WSm25InZ9LP8YPh4ggqTFMgVHlnsb8z-SM2Ve1sIEciaDvMX5YZ-I2IqxyUgW6oHgEED9z4O_NxGdn-EXqY3696kVALsVfczC7bvGTVes5hWMIFCapRjwUXArjYlcFCITU9VKz6ocglaXquspZQCt7FFc8HW2plwdQJetVgeGvyk8ZpPYYXK4_ebgpwtAnPBnjo8oSLmiSlM800Lx2cZY0UxIKy6CGMI" />
-                      <button className="absolute top-4 right-4 p-2 bg-surface/80 backdrop-blur-sm rounded-full text-on-surface hover:bg-on-surface hover:text-surface transition-all">
-                        <Link href="/shop"><span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span></Link>
-                      </button>
+              {activeTab === 'dashboard' && (
+                <>
+                  {/* Recent Orders (Last 3) */}
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-end border-b border-outline-variant/10 pb-4">
+                      <h3 className="font-['Manrope'] uppercase tracking-widest text-xs font-bold text-on-surface">Recent Orders</h3>
+                      <button onClick={() => setActiveTab('history')} className="text-xs text-secondary font-semibold hover:underline">View All</button>
                     </div>
-                    <div className="space-y-1">
-                      <h4 className="font-['Manrope'] uppercase text-[10px] tracking-[0.15em] text-outline">Signature Collection</h4>
-                      <div className="flex justify-between items-baseline">
-                        <p className="text-sm font-semibold">Azhagiii Silk Slip</p>
-                        <p className="font-['Noto_Serif'] text-sm italic">₹420</p>
+                    {renderOrderTable(orders.slice(0, 3))}
+                  </div>
+
+                  {/* Wishlist */}
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-end border-b border-outline-variant/10 pb-4">
+                      <h3 className="font-['Manrope'] uppercase tracking-widest text-xs font-bold text-on-surface">Curated Wishlist</h3>
+                      <span className="text-[10px] text-outline">{wishlist.length} ITEMS SAVED</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                      {wishlist.map(item => (
+                        <div key={item.id} className="group relative flex flex-col gap-4">
+                          <div className="aspect-[4/5] overflow-hidden rounded-lg bg-surface-container-low relative">
+                            <img alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src={item.image} />
+                            <button 
+                              onClick={() => {
+                                const newWishlist = wishlist.filter(w => w.id !== item.id);
+                                setWishlist(newWishlist);
+                                localStorage.setItem('atelier_wishlist', JSON.stringify(newWishlist));
+                              }}
+                              className="absolute top-4 right-4 p-2 bg-surface/80 backdrop-blur-sm rounded-full text-on-surface hover:bg-error hover:text-surface transition-all z-10"
+                            >
+                              <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>close</span>
+                            </button>
+                            <Link href={`/product/${item.id}`} className="absolute inset-0 z-0"></Link>
+                          </div>
+                          <div className="space-y-1">
+                            <h4 className="font-['Manrope'] uppercase text-[10px] tracking-[0.15em] text-outline">Saved Item</h4>
+                            <div className="flex justify-between items-baseline">
+                              <p className="text-sm font-semibold">{item.name}</p>
+                              <p className="font-['Noto_Serif'] text-sm italic">{item.price}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Empty slot style */}
+                      <div className="group relative flex flex-col gap-4">
+                        <div className="aspect-[4/5] rounded-lg bg-[#7e572e]/5 border border-dashed border-[#7e572e]/20 flex flex-col items-center justify-center p-8 text-center gap-4 hover:bg-[#7e572e]/10 transition-colors cursor-pointer">
+                          <Link href="/shop" className="absolute inset-0"></Link>
+                          <span className="material-symbols-outlined text-4xl text-[#7e572e]/40">add_circle</span>
+                          <div className="space-y-1">
+                            <p className="text-xs font-bold uppercase tracking-widest text-[#7e572e]">Add to Moodboard</p>
+                            <p className="text-[11px] text-outline-variant max-w-[140px]">Keep exploring to find your next statement piece.</p>
+                          </div>
+                          <span className="mt-2 text-[10px] uppercase tracking-widest font-bold border-b border-on-surface/10 group-hover:border-on-surface transition-all">Shop Collections</span>
+                        </div>
                       </div>
                     </div>
+                  </div>
+                </>
+              )}
+
+              {activeTab === 'history' && (
+                <div className="space-y-6">
+                  <div className="flex justify-between items-end border-b border-outline-variant/10 pb-4">
+                    <h3 className="font-['Manrope'] uppercase tracking-widest text-xs font-bold text-on-surface">Complete Order History</h3>
+                    <span className="text-[10px] text-outline">{orders.length} TOTAL ORDERS</span>
+                  </div>
+                  {renderOrderTable(orders)}
+                </div>
+              )}
+
+              {activeTab === 'addresses' && (
+                <div className="space-y-6">
+                  <div className="flex justify-between items-end border-b border-outline-variant/10 pb-4">
+                    <h3 className="font-['Manrope'] uppercase tracking-widest text-xs font-bold text-on-surface">Saved Addresses</h3>
+                    <button onClick={() => setIsAddingAddress(true)} className="text-xs text-on-surface bg-secondary/10 px-4 py-2 rounded-full font-semibold hover:bg-secondary/20 transition">Add New Address</button>
                   </div>
                   
-                  {/* Wishlist Item 2 */}
-                  <div className="group relative flex flex-col gap-4">
-                    <div className="aspect-[4/5] overflow-hidden rounded-lg bg-surface-container-low">
-                      <img alt="Leather bucket bag" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBm2x5mhMKwjdQ91iQsCqvoq0C8OZVoIrnf_bUtXP-_LLOrwKkD2t112ma5_PzBSEhKkL-FNdUO8fZa294KP9qxfWy6CdFDNucm0ElxQq65y7137raE6eaVZ5B9gIRiJetIXNfh1LGuRtxpeqYdrWsy-O9vIq3XRRJAUc83Q71AL8m3ucddDSgn-izzoHFhrzKTOY4rKp9ZuRoH3Bvax_7ohhz6PH3XBLLZQ5LR7U_w-jqssUhoJi4_Aj2RPknHTdt3mI7CP7Cw6s" />
-                      <button className="absolute top-4 right-4 p-2 bg-surface/80 backdrop-blur-sm rounded-full text-on-surface hover:bg-on-surface hover:text-surface transition-all">
-                        <Link href="/shop"><span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span></Link>
-                      </button>
-                    </div>
-                    <div className="space-y-1">
-                      <h4 className="font-['Manrope'] uppercase text-[10px] tracking-[0.15em] text-outline">Accessories</h4>
-                      <div className="flex justify-between items-baseline">
-                        <p className="text-sm font-semibold">Sculptural Leather Tote</p>
-                        <p className="font-['Noto_Serif'] text-sm italic">₹890</p>
+                  {isAddingAddress && (
+                    <form onSubmit={handleSaveAddress} className="bg-surface-container-lowest p-6 rounded-xl space-y-4 mb-6 border border-outline-variant/20">
+                      <h4 className="font-bold text-sm mb-4">Add a New Shipping Address</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input required placeholder="Full Name" value={newAddress.fullName} onChange={(e) => setNewAddress({...newAddress, fullName: e.target.value})} className="w-full bg-surface-container border border-outline-variant/30 rounded px-4 py-3 text-sm focus:outline-none focus:border-on-surface transition-colors" />
+                        <input required placeholder="City" value={newAddress.city} onChange={(e) => setNewAddress({...newAddress, city: e.target.value})} className="w-full bg-surface-container border border-outline-variant/30 rounded px-4 py-3 text-sm focus:outline-none focus:border-on-surface transition-colors" />
+                        <input required placeholder="Address Line" value={newAddress.address} onChange={(e) => setNewAddress({...newAddress, address: e.target.value})} className="w-full md:col-span-2 bg-surface-container border border-outline-variant/30 rounded px-4 py-3 text-sm focus:outline-none focus:border-on-surface transition-colors" />
+                        <input required placeholder="Postal Code" value={newAddress.postalCode} onChange={(e) => setNewAddress({...newAddress, postalCode: e.target.value})} className="w-full bg-surface-container border border-outline-variant/30 rounded px-4 py-3 text-sm focus:outline-none focus:border-on-surface transition-colors" />
                       </div>
-                    </div>
-                  </div>
-
-                  {/* Empty slot style */}
-                  <div className="group relative flex flex-col gap-4">
-                    <div className="aspect-[4/5] rounded-lg bg-[#7e572e]/5 border border-dashed border-[#7e572e]/20 flex flex-col items-center justify-center p-8 text-center gap-4">
-                      <span className="material-symbols-outlined text-4xl text-[#7e572e]/40">add_circle</span>
-                      <div className="space-y-1">
-                        <p className="text-xs font-bold uppercase tracking-widest text-[#7e572e]">Add to Moodboard</p>
-                        <p className="text-[11px] text-outline-variant max-w-[140px]">Keep exploring to find your next statement piece.</p>
+                      <div className="flex justify-end gap-2 pt-2">
+                        <button type="button" onClick={() => setIsAddingAddress(false)} className="px-6 py-2 rounded font-bold text-xs uppercase tracking-widest text-on-surface-variant hover:bg-surface-container">Cancel</button>
+                        <button type="submit" className="px-6 py-2 rounded font-bold text-xs uppercase tracking-widest bg-on-surface text-surface hover:bg-secondary transition">Save Address</button>
                       </div>
-                      <Link href="/shop" className="mt-2 text-[10px] uppercase tracking-widest font-bold border-b border-on-surface/10 hover:border-on-surface transition-all">Shop Collections</Link>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                    </form>
+                  )}
 
-              {/* Profile Summary Card */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                <div className="p-8 bg-surface-container-low rounded-xl space-y-4">
-                  <h3 className="font-['Manrope'] uppercase tracking-widest text-[10px] font-bold text-outline">Preferred Shipping</h3>
-                  <div className="space-y-1">
-                    <p className="text-sm font-semibold">{user.name}</p>
-                    <p className="text-sm text-on-surface-variant leading-relaxed">240 Central Park West, Apt 4C<br/>New York, NY 10024</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {addresses.length === 0 && !isAddingAddress && (
+                      <p className="text-sm text-outline col-span-2">No saved addresses yet.</p>
+                    )}
+                    {addresses.map((addr, idx) => (
+                      <div key={addr.id || idx} className="p-8 bg-surface-container-low rounded-xl relative group">
+                        <div className="space-y-1 pr-8">
+                          <p className="text-sm font-semibold">{addr.fullName}</p>
+                          <p className="text-sm text-on-surface-variant leading-relaxed">{addr.address}<br/>{addr.city}, {addr.postalCode}</p>
+                        </div>
+                        <button onClick={() => handleDeleteAddress(addr.id)} className="absolute top-4 right-4 p-2 text-error/50 hover:bg-error-container hover:text-error rounded-full transition-all">
+                          <span className="material-symbols-outlined text-[18px]">delete</span>
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                  <button className="text-xs font-bold border-b border-outline-variant hover:border-on-surface transition-all py-1">Edit Address</button>
                 </div>
-                <div className="p-8 bg-surface-container-low rounded-xl space-y-4">
-                  <h3 className="font-['Manrope'] uppercase tracking-widest text-[10px] font-bold text-outline">Payment Method</h3>
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-8 bg-on-surface rounded flex items-center justify-center">
-                      <span className="text-[8px] text-surface font-bold">VISA</span>
-                    </div>
-                    <p className="text-sm font-semibold">Ending in •••• 4421</p>
-                  </div>
-                  <button className="text-xs font-bold border-b border-outline-variant hover:border-on-surface transition-all py-1">Manage Cards</button>
-                </div>
-              </div>
+              )}
+
             </section>
           </div>
         )}

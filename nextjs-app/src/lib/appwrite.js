@@ -6,7 +6,10 @@ export const APPWRITE_ENDPOINT = "https://sgp.cloud.appwrite.io/v1";
 export const DATABASE_ID = "6a46314a00119414ee28";
 export const CUSTOMERS_COLLECTION_ID = "6a46314e002a9d381971";
 export const PRODUCTS_COLLECTION_ID = "6a473fb5002369e03d30";
-export const BUCKET_ID = "6a46315b00292c507910";
+export const ORDERS_COLLECTION_ID = "6a475366000a0609c90a";
+export const REVIEWS_COLLECTION_ID = "6a47537d002614f0cd30";
+export const COUPONS_COLLECTION_ID = "6a4759aa001f2ff1b886";
+export const BUCKET_ID = "product-images";
 
 const client = new Client()
     .setEndpoint(APPWRITE_ENDPOINT)
