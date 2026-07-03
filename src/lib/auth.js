@@ -3,11 +3,12 @@ import { account } from './appwrite.js';
 
 /**
  * Initiates the Google OAuth2 login flow.
+ * @param {string} [redirectUrl] - The URL to redirect to upon successful login.
  */
-export function loginWithGoogle() {
+export function loginWithGoogle(redirectUrl) {
     // Determine current origin for callbacks
     const currentOrigin = window.location.origin;
-    const successUrl = `${currentOrigin}/account.html`;
+    const successUrl = redirectUrl || `${currentOrigin}/account.html`;
     const failureUrl = `${currentOrigin}/account.html?error=login_failed`;
 
     // Start OAuth flow

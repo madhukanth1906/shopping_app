@@ -89,6 +89,7 @@
         body { font-family: 'Manrope', sans-serif; }
         .editorial-title { font-family: 'Noto Serif', serif; }
     </style>
+    <link rel="icon" type="image/png" href="/favicon.png" />
 </head>
 <body class="bg-background text-on-surface">
 <!-- TopNavBar -->
@@ -216,7 +217,7 @@
 <button class="text-[10px] font-bold uppercase tracking-widest hover:text-secondary">Apply</button>
 </div>
 </div>
-<button class="w-full bg-on-surface text-surface py-5 rounded-full uppercase tracking-[0.2em] text-xs font-bold hover:bg-secondary transition-all flex items-center justify-center gap-2">
+<button id="btn-proceed-checkout" class="w-full bg-on-surface text-surface py-5 rounded-full uppercase tracking-[0.2em] text-xs font-bold hover:bg-secondary transition-all flex items-center justify-center gap-2">
                         Proceed to Checkout
                         <span class="material-symbols-outlined text-sm">arrow_forward</span>
 </button>
@@ -230,7 +231,7 @@
 </div>
 </div>
 <!-- Checkout View (Transitioning UI state visually) -->
-<div class="mt-32 pt-24 border-t border-outline-variant/10">
+<div id="checkout-view" class="mt-32 pt-24 border-t border-outline-variant/10 hidden">
 <div class="flex justify-center mb-16 space-x-12">
 <div class="flex items-center gap-3 opacity-30">
 <span class="editorial-title text-2xl">01</span>
@@ -250,19 +251,22 @@
 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10">
 <div class="md:col-span-2">
 <label class="text-[10px] uppercase tracking-widest font-bold mb-1 block">Full Name</label>
-<input class="w-full bg-transparent border-b border-outline-variant/30 focus:border-on-surface focus:ring-0 border-t-0 border-x-0 px-0 py-3 text-sm tracking-wide" placeholder="Evelyn Thorne" type="text"/>
+<input id="shipping-name" class="w-full bg-transparent border-b border-outline-variant/30 focus:border-on-surface focus:ring-0 border-t-0 border-x-0 px-0 py-3 text-sm tracking-wide" placeholder="Evelyn Thorne" type="text"/>
 </div>
 <div class="md:col-span-2">
 <label class="text-[10px] uppercase tracking-widest font-bold mb-1 block">Address</label>
-<input class="w-full bg-transparent border-b border-outline-variant/30 focus:border-on-surface focus:ring-0 border-t-0 border-x-0 px-0 py-3 text-sm tracking-wide" placeholder="124 Editorial Row, Suite 402" type="text"/>
+<input id="shipping-address" class="w-full bg-transparent border-b border-outline-variant/30 focus:border-on-surface focus:ring-0 border-t-0 border-x-0 px-0 py-3 text-sm tracking-wide" placeholder="124 Editorial Row, Suite 402" type="text"/>
 </div>
 <div>
 <label class="text-[10px] uppercase tracking-widest font-bold mb-1 block">City</label>
-<input class="w-full bg-transparent border-b border-outline-variant/30 focus:border-on-surface focus:ring-0 border-t-0 border-x-0 px-0 py-3 text-sm tracking-wide" placeholder="Milan" type="text"/>
+<input id="shipping-city" class="w-full bg-transparent border-b border-outline-variant/30 focus:border-on-surface focus:ring-0 border-t-0 border-x-0 px-0 py-3 text-sm tracking-wide" placeholder="Milan" type="text"/>
 </div>
 <div>
 <label class="text-[10px] uppercase tracking-widest font-bold mb-1 block">Postal Code</label>
-<input class="w-full bg-transparent border-b border-outline-variant/30 focus:border-on-surface focus:ring-0 border-t-0 border-x-0 px-0 py-3 text-sm tracking-wide" placeholder="20121" type="text"/>
+<input id="shipping-postal" class="w-full bg-transparent border-b border-outline-variant/30 focus:border-on-surface focus:ring-0 border-t-0 border-x-0 px-0 py-3 text-sm tracking-wide" placeholder="20121" type="text"/>
+</div>
+<div class="md:col-span-2 flex justify-end mt-4">
+    <button id="btn-save-address" class="bg-secondary text-on-secondary px-6 py-2 rounded uppercase tracking-widest text-xs font-bold hover:bg-on-surface transition-all">Save Address</button>
 </div>
 </div>
 </section>
@@ -402,4 +406,5 @@
 <p class="font-['Manrope'] text-[9px] tracking-[0.2em] text-[#5f5e5e] uppercase">© 2024 AZHAGII. ALL RIGHTS RESERVED.</p>
 </div>
 </footer>
+<script type="module" src="./src/cart.js"></script>
 </body></html>

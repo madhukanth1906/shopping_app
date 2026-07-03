@@ -1,4 +1,4 @@
-import { Client, Account, Databases, Storage } from "appwrite";
+import { Client, Account, Databases, Storage, ID, Query } from "appwrite";
 
 export const APPWRITE_PROJECT_ID = "6a462ca3002266cef903";
 export const APPWRITE_ENDPOINT = "https://sgp.cloud.appwrite.io/v1";
@@ -16,4 +16,4 @@ const account = new Account(client);
 const databases = new Databases(client);
 const storage = new Storage(client);
 
-export { client, account, databases, storage };
+export { client, account, databases, storage, ID, Query };
