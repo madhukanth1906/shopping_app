@@ -38,7 +38,9 @@ export default function Admin() {
   const [restockQuantities, setRestockQuantities] = useState({ XS: 0, S: 0, M: 0, L: 0, XL: 0 });
 
   // Orders Filter State
-  const [orderSort, setOrderSort] = useState("asc"); // 'asc' for oldest first, 'desc' for newest first
+  const [orderSort, setOrderSort] = useState("desc"); // 'asc' for oldest first, 'desc' for newest first
+  const [orderStatusFilter, setOrderStatusFilter] = useState("All");
+  const [orderSearch, setOrderSearch] = useState("");
   const [orderDateFilter, setOrderDateFilter] = useState("");
   const [selectedDossierOrder, setSelectedDossierOrder] = useState(null);
   const [trackingNumber, setTrackingNumber] = useState("");
@@ -614,21 +616,29 @@ export default function Admin() {
           
           {activeTab === 'Orders' && (
             <section className="mb-12 space-y-6">
-              <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/10 p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/10 p-4 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
                 <div className="flex-1 bg-surface-container-low rounded-lg px-4 py-2 flex items-center gap-2 border border-outline-variant/10">
                   <Search size={16} className="text-outline" />
-                  <input type="text" placeholder="Search by ID, client name..." className="bg-transparent border-none outline-none text-sm w-full" />
+                  <input type="text" placeholder="Search by ID, client name..." value={orderSearch} onChange={(e) => setOrderSearch(e.target.value)} className="bg-transparent border-none outline-none text-sm w-full" />
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={() => setOrderSort('desc')} className="bg-on-surface text-surface px-6 py-2 rounded font-label text-xs uppercase tracking-widest hover:bg-secondary transition-colors">All</button>
-                  <button className="text-outline px-4 py-2 rounded font-label text-xs uppercase tracking-widest hover:text-on-surface transition-colors">Processing</button>
-                  <button className="text-outline px-4 py-2 rounded font-label text-xs uppercase tracking-widest hover:text-on-surface transition-colors">Shipped / Transit</button>
-                  <button className="text-outline px-4 py-2 rounded font-label text-xs uppercase tracking-widest hover:text-on-surface transition-colors">Delivered</button>
+                <div className="flex flex-col md:flex-row gap-4 items-center overflow-x-auto pb-2 xl:pb-0">
+                  <div className="flex gap-2 shrink-0">
+                    <button onClick={() => setOrderSort(orderSort === 'desc' ? 'asc' : 'desc')} className="text-outline px-4 py-2 rounded font-label text-xs uppercase tracking-widest hover:text-on-surface transition-colors flex items-center gap-1 border border-outline-variant/30">
+                      {orderSort === 'desc' ? 'Newest First' : 'Oldest First'}
+                    </button>
+                    <input type="date" value={orderDateFilter} onChange={(e) => setOrderDateFilter(e.target.value)} className="bg-transparent border border-outline-variant/30 rounded px-2 py-1 text-xs outline-none text-on-surface uppercase font-label tracking-widest" />
+                  </div>
+                  <div className="flex gap-2 md:border-l md:border-outline-variant/20 md:pl-4 shrink-0">
+                    <button onClick={() => setOrderStatusFilter('All')} className={`${orderStatusFilter === 'All' ? 'bg-on-surface text-surface' : 'text-outline hover:text-on-surface'} px-4 py-2 rounded font-label text-xs uppercase tracking-widest transition-colors`}>All</button>
+                    <button onClick={() => setOrderStatusFilter('Processing')} className={`${orderStatusFilter === 'Processing' ? 'bg-on-surface text-surface' : 'text-outline hover:text-on-surface'} px-4 py-2 rounded font-label text-xs uppercase tracking-widest transition-colors`}>Processing</button>
+                    <button onClick={() => setOrderStatusFilter('Shipped / Transit')} className={`${orderStatusFilter === 'Shipped / Transit' ? 'bg-on-surface text-surface' : 'text-outline hover:text-on-surface'} px-4 py-2 rounded font-label text-xs uppercase tracking-widest transition-colors`}>Shipped / Transit</button>
+                    <button onClick={() => setOrderStatusFilter('Delivered')} className={`${orderStatusFilter === 'Delivered' ? 'bg-on-surface text-surface' : 'text-outline hover:text-on-surface'} px-4 py-2 rounded font-label text-xs uppercase tracking-widest transition-colors`}>Delivered</button>
+                  </div>
                 </div>
               </div>
 
-              <div className="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden border border-outline-variant/10">
-                <table className="w-full text-left border-collapse">
+              <div className="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden border border-outline-variant/10 overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[800px]">
                   <thead>
                     <tr className="bg-surface-container-low/20 text-[10px] uppercase tracking-[0.15em] text-outline font-bold">
                       <th className="px-8 py-4 w-1/5">Order Details</th>
@@ -643,6 +653,28 @@ export default function Admin() {
                       <tr><td colSpan="5" className="px-8 py-5 text-center text-sm text-outline">No orders found.</td></tr>
                     ) : (
                       orders
+                        .filter(order => {
+                          if (orderSearch) {
+                            const searchLower = orderSearch.toLowerCase();
+                            const addr = JSON.parse(order.shippingAddress || '{}');
+                            if (!order.$id.toLowerCase().includes(searchLower) && 
+                                !(addr.fullName && addr.fullName.toLowerCase().includes(searchLower)) &&
+                                !(addr.email && addr.email.toLowerCase().includes(searchLower))) {
+                              return false;
+                            }
+                          }
+                          if (orderDateFilter) {
+                            const orderDateStr = new Date(order.$createdAt).toISOString().split('T')[0];
+                            if (orderDateStr !== orderDateFilter) return false;
+                          }
+                          if (orderStatusFilter !== 'All') {
+                            const isProcessing = order.status === 'Pending' || order.status === 'Processing';
+                            if (orderStatusFilter === 'Processing' && !isProcessing) return false;
+                            if (orderStatusFilter === 'Shipped / Transit' && order.status !== 'Shipped') return false;
+                            if (orderStatusFilter === 'Delivered' && order.status !== 'Delivered') return false;
+                          }
+                          return true;
+                        })
                         .sort((a, b) => {
                           const dateA = new Date(a.$createdAt).getTime();
                           const dateB = new Date(b.$createdAt).getTime();
