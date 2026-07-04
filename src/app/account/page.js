@@ -54,20 +54,6 @@ export default function Account() {
   useEffect(() => {
     async function fetchUser() {
       try {
-        if (typeof window !== 'undefined') {
-            const params = new URLSearchParams(window.location.search);
-            const userId = params.get('userId');
-            const secret = params.get('secret');
-            if (userId && secret) {
-                try {
-                    await account.createSession(userId, secret);
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                } catch (e) {
-                    console.error('Failed to create session from token', e);
-                }
-            }
-        }
-
         const w = JSON.parse(localStorage.getItem('atelier_wishlist') || '[]');
         setWishlist(w);
         

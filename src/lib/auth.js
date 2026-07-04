@@ -5,10 +5,7 @@ export const loginWithGoogle = () => {
     if (typeof localStorage !== 'undefined') {
         localStorage.removeItem('cookieFallback');
     }
-    // Fallback to createOAuth2Session if createOAuth2Token is not available in this SDK version
-    const method = account.createOAuth2Token || account.createOAuth2Session;
-    method.call(
-        account,
+    account.createOAuth2Session(
         OAuthProvider.Google,
         `${window.location.origin}/account`,
         `${window.location.origin}/account`
