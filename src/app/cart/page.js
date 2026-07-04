@@ -1,22 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import OrderSuccess from "@/components/OrderSuccess";
 import { saveOrder, validateCoupon, fetchProducts, saveProduct } from "@/lib/catalog";
 import { getUser } from "@/lib/auth";
 import { account } from "@/lib/appwrite";
 import { useToast } from "@/components/ToastProvider";
 import Link from "next/link";
+import { CheckCircle, CreditCard, Banknote, MapPin, Truck, ChevronRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from "next/navigation";
 
-export default function Cart() {
+export default function Checkout() {
   const { showToast } = useToast();
   const router = useRouter();
-  const [isCheckout, setIsCheckout] = useState(false);
+  
+  const [currentStep, setCurrentStep] = useState(1);
   const [cartItems, setCartItems] = useState([]);
   const [subtotal, setSubtotal] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [orderComplete, setOrderComplete] = useState(false);
   
   // Checkout Form State
   const [shipping, setShipping] = useState({
@@ -36,6 +41,13 @@ export default function Cart() {
   const [discountAmount, setDiscountAmount] = useState(0);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
+  const steps = [
+    { id: 1, title: 'Address' },
+    { id: 2, title: 'Delivery' },
+    { id: 3, title: 'Payment' },
+    { id: 4, title: 'Review' }
+  ];
+
   useEffect(() => {
     loadCart();
     fetchSavedAddresses();
@@ -44,23 +56,9 @@ export default function Cart() {
   const loadCart = () => {
     const cart = JSON.parse(localStorage.getItem('atelier_cart') || '[]');
     setCartItems(cart);
-    
-    let total = 0;
-    cart.forEach(item => {
-      const numericStr = (item.price || "").replace(/[^0-9.]/g, '');
-      total += (parseFloat(numericStr) || 0) * (item.quantity || 1);
-    });
-    setSubtotal(total);
-  };
-
-  const updateQuantity = (index, newQuantity) => {
-    if (newQuantity < 1) return;
-    const cart = JSON.parse(localStorage.getItem('atelier_cart') || '[]');
-    cart[index].quantity = newQuantity;
-    localStorage.setItem('atelier_cart', JSON.stringify(cart));
-    window.dispatchEvent(new Event('cartUpdated'));
-    
-    setCartItems(cart);
+    if (cart.length === 0) {
+      router.push('/');
+    }
     
     let total = 0;
     cart.forEach(item => {
@@ -90,57 +88,23 @@ export default function Cart() {
 
   const handleSelectAddress = (addr) => {
     setSelectedAddressId(addr.id);
-    setShipping({
-      fullName: addr.fullName,
-      address: addr.address,
-      city: addr.city,
-      postalCode: addr.postalCode,
-      paymentMethod: shipping.paymentMethod
-    });
-  };
-
-  const handleRemove = (index) => {
-    const updated = [...cartItems];
-    updated.splice(index, 1);
-    localStorage.setItem('atelier_cart', JSON.stringify(updated));
-    window.dispatchEvent(new Event('cartUpdated'));
-    loadCart();
-  };
-
-  const applyCoupon = async () => {
-    if (!couponCode) return;
-    setIsApplyingCoupon(true);
-    try {
-      const result = await validateCoupon(couponCode.toUpperCase());
-      if (result.valid) {
-        const coupon = result.coupon;
-        if (subtotal < coupon.minPrice) {
-          showToast(`Order must be at least ₹${coupon.minPrice} to use this coupon.`, 'error');
-          setDiscountAmount(0);
-        } else {
-          setDiscountAmount(coupon.discountAmount);
-          showToast('Coupon applied!', 'success');
-        }
-      } else {
-        showToast(result.message, 'error');
-        setDiscountAmount(0);
-      }
-    } catch (err) {
-      showToast('Error applying coupon.', 'error');
-      setDiscountAmount(0);
-    } finally {
-      setIsApplyingCoupon(false);
-    }
+    setShipping({ ...shipping, fullName: addr.fullName, address: addr.address, city: addr.city, postalCode: addr.postalCode });
   };
 
   const finalTotal = Math.max(0, subtotal - discountAmount);
 
-  const handleCompleteOrder = async () => {
-    if (!shipping.fullName || !shipping.address || !shipping.city) {
-      showToast("Please fill out your shipping details.", "error");
-      return;
+  const handleNextStep = () => {
+    if (currentStep === 1) {
+      if (!shipping.fullName || !shipping.address || !shipping.city) {
+        showToast("Please fill out all address fields.", "error");
+        return;
+      }
     }
-    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setCurrentStep(prev => Math.min(prev + 1, 4));
+  };
+
+  const handlePlaceOrder = async () => {
     setIsSubmitting(true);
     try {
       const user = await getUser();
@@ -167,8 +131,8 @@ export default function Cart() {
       }
       localStorage.removeItem('atelier_cart');
       window.dispatchEvent(new Event('cartUpdated'));
-      showToast("Order placed successfully!", "success");
-      router.push("/");
+      
+      setOrderComplete(true);
     } catch (err) {
       console.error(err);
       showToast("Failed to place order.", "error");
@@ -177,260 +141,232 @@ export default function Cart() {
     }
   };
 
+  if (orderComplete) {
+    return <OrderSuccess orderDetails={{ total: finalTotal, shippingAddress: shipping }} />;
+  }
+
+  const containerVariants = {
+    hidden: { opacity: 0, x: 20 },
+    visible: { opacity: 1, x: 0, transition: { duration: 0.4, ease: "easeOut" } },
+    exit: { opacity: 0, x: -20, transition: { duration: 0.2 } }
+  };
+
   return (
     <>
       <Navbar />
       <main className="pt-32 pb-24 px-6 md:px-12 max-w-7xl mx-auto min-h-screen">
         
-        <div className="flex justify-center mb-16 space-x-12">
-          <div className={`flex items-center gap-3 ${isCheckout ? 'opacity-30' : ''}`}>
-            <span className="font-headline text-2xl text-on-surface">01</span>
-            <span className={`uppercase tracking-widest text-[10px] font-bold ${!isCheckout ? 'border-b border-on-surface pb-1' : ''}`}>Shopping Bag</span>
-          </div>
-          <div className={`flex items-center gap-3 ${!isCheckout ? 'opacity-30' : ''}`}>
-            <span className="font-headline text-2xl">02</span>
-            <span className={`uppercase tracking-widest text-[10px] font-bold ${isCheckout ? 'border-b border-on-surface pb-1 text-on-surface' : ''}`}>Checkout</span>
-          </div>
+        {/* Step Indicator */}
+        <div className="flex justify-center mb-16 max-w-2xl mx-auto">
+          {steps.map((step, index) => (
+            <div key={step.id} className="flex items-center">
+              <div className={`flex flex-col items-center ${currentStep >= step.id ? 'text-on-surface' : 'text-outline opacity-40'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mb-2 transition-colors ${currentStep === step.id ? 'bg-on-surface text-surface' : currentStep > step.id ? 'bg-surface border-2 border-on-surface text-on-surface' : 'border-2 border-outline'}`}>
+                  {currentStep > step.id ? <CheckCircle size={14} /> : step.id}
+                </div>
+                <span className="text-[9px] uppercase tracking-widest font-bold">{step.title}</span>
+              </div>
+              {index < steps.length - 1 && (
+                <div className={`w-12 md:w-24 h-px mx-4 -mt-6 ${currentStep > step.id ? 'bg-on-surface' : 'bg-outline-variant/30'}`} />
+              )}
+            </div>
+          ))}
         </div>
 
-        {!isCheckout ? (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
-            <div className="lg:col-span-7 space-y-12">
-              <h1 className="font-headline text-4xl mb-8">Your Selections</h1>
-              
-              <div className="space-y-10">
-                {cartItems.length === 0 ? (
-                  <p className="text-outline text-sm uppercase tracking-widest">Your shopping bag is empty.</p>
-                ) : (
-                  cartItems.map((item, index) => (
-                    <div key={index} className="flex gap-6 pb-10 border-b border-outline-variant/10">
-                      <div className="w-32 h-44 bg-surface-container overflow-hidden rounded-lg shrink-0">
-                        <img className="w-full h-full object-cover" src={item.image} alt={item.name} />
-                      </div>
-                      <div className="flex-1 flex flex-col justify-between py-2">
-                        <div>
-                          <div className="flex justify-between items-start">
-                            <h3 className="font-semibold uppercase tracking-wider text-xs">{item.name}</h3>
-                            <button onClick={() => handleRemove(index)} className="text-outline hover:text-on-surface transition-colors">
-                              <span className="material-symbols-outlined text-sm">close</span>
-                            </button>
-                          </div>
-                          <p className="text-on-surface-variant text-sm mt-1">{item.size}</p>
-                          <p className="font-headline text-lg mt-2">{item.price}</p>
-                        </div>
-                        <div className="flex items-center gap-6 mt-4">
-                          <div className="flex items-center border border-outline-variant/20 rounded-full px-2 py-1 gap-4">
-                            <button onClick={() => updateQuantity(index, (item.quantity || 1) - 1)} className="text-outline hover:text-on-surface transition-colors w-6 h-6 flex items-center justify-center">-</button>
-                            <span className="text-xs font-bold w-4 text-center">{item.quantity || 1}</span>
-                            <button onClick={() => updateQuantity(index, (item.quantity || 1) + 1)} className="text-outline hover:text-on-surface transition-colors w-6 h-6 flex items-center justify-center">+</button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              <div className="bg-surface-container-low p-6 rounded-lg flex items-center gap-4">
-                <span className="material-symbols-outlined text-secondary">local_shipping</span>
-                <p className="text-xs uppercase tracking-wide">Complementary shipping on orders over ₹1,000</p>
-              </div>
-            </div>
-
-            <div className="lg:col-span-5">
-              <div className="bg-surface-container-lowest p-8 lg:p-12 rounded-lg border border-outline-variant/10 sticky top-32">
-                <h2 className="font-headline text-2xl mb-8">Order Summary</h2>
-                <div className="space-y-4 mb-8">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-on-surface-variant uppercase tracking-wider">Subtotal</span>
-                    <span className="font-headline">₹{subtotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-on-surface-variant uppercase tracking-wider">Shipping</span>
-                    <span className="font-headline">FREE</span>
-                  </div>
-                  <div className="pt-4 border-t border-outline-variant/10 flex justify-between">
-                    <span className="font-bold uppercase tracking-widest text-xs">Total</span>
-                    <span className="font-headline text-2xl">₹{subtotal.toFixed(2)}</span>
-                  </div>
-                </div>
-                
-                <button 
-                  onClick={() => setIsCheckout(true)}
-                  disabled={cartItems.length === 0}
-                  className="w-full bg-on-surface text-surface py-5 rounded-full uppercase tracking-[0.2em] text-xs font-bold hover:bg-secondary transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Proceed to Checkout
-                  <span className="material-symbols-outlined text-sm">arrow_forward</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 border-t border-outline-variant/10 pt-10">
-            <div className="lg:col-span-7 space-y-16">
-              
-              <section>
-                <div className="flex justify-between items-end mb-6">
-                  <h2 className="font-headline text-3xl">Shipping Details</h2>
-                </div>
-
-                {savedAddresses.length > 0 && (
-                  <div className="mb-10">
-                    <p className="text-[10px] uppercase tracking-widest font-bold mb-4 text-on-surface-variant">Saved Addresses</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+          <div className="lg:col-span-7">
+            <AnimatePresence mode="wait">
+              {currentStep === 1 && (
+                <motion.div key="step1" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-8">
+                  <h2 className="font-headline text-3xl mb-8">Shipping Address</h2>
+                  
+                  {savedAddresses.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                       {savedAddresses.map(addr => (
                         <div 
-                          key={addr.id}
-                          onClick={() => handleSelectAddress(addr)}
-                          className={`p-4 rounded-xl border cursor-pointer transition-colors ${selectedAddressId === addr.id ? 'border-primary bg-primary-container/20' : 'border-outline-variant/30 hover:border-on-surface bg-surface-container-low'}`}
+                          key={addr.id} onClick={() => handleSelectAddress(addr)}
+                          className={`p-5 rounded-xl border cursor-pointer transition-all ${selectedAddressId === addr.id ? 'border-secondary bg-secondary/5 ring-1 ring-secondary' : 'border-outline-variant/30 hover:border-on-surface bg-surface shadow-sm'}`}
                         >
                           <div className="flex justify-between items-start mb-2">
-                            <p className="font-bold text-sm">{addr.fullName}</p>
-                            {selectedAddressId === addr.id && <span className="material-symbols-outlined text-primary text-sm">check_circle</span>}
+                            <p className="font-bold text-sm tracking-wide">{addr.fullName}</p>
+                            {selectedAddressId === addr.id && <CheckCircle size={18} className="text-secondary" strokeWidth={2} />}
                           </div>
-                          <p className="text-xs text-on-surface-variant">{addr.address}</p>
-                          <p className="text-xs text-on-surface-variant">{addr.city}, {addr.postalCode}</p>
+                          <p className="text-xs text-on-surface-variant mt-2 leading-relaxed">{addr.address}<br/>{addr.city}, {addr.postalCode}</p>
                         </div>
                       ))}
-                      <div 
-                        onClick={() => { setSelectedAddressId('new'); setShipping({ fullName: '', address: '', city: '', postalCode: '', paymentMethod: shipping.paymentMethod }); }}
-                        className={`p-4 rounded-xl border border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors ${selectedAddressId === 'new' ? 'border-primary bg-primary-container/10' : 'border-outline-variant hover:border-on-surface'}`}
-                      >
-                        <span className="material-symbols-outlined text-outline">add</span>
-                        <p className="text-xs font-bold uppercase tracking-widest text-outline">New Address</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10">
-                  <div className="md:col-span-2">
-                    <label className="text-[10px] uppercase tracking-widest font-bold mb-1 block">Full Name *</label>
-                    <input 
-                      value={shipping.fullName} onChange={e => setShipping({...shipping, fullName: e.target.value})}
-                      className="w-full bg-transparent border-b border-outline-variant/30 focus:border-on-surface focus:ring-0 border-t-0 border-x-0 px-0 py-3 text-sm tracking-wide outline-none" type="text" />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="text-[10px] uppercase tracking-widest font-bold mb-1 block">Address *</label>
-                    <input 
-                      value={shipping.address} onChange={e => setShipping({...shipping, address: e.target.value})}
-                      className="w-full bg-transparent border-b border-outline-variant/30 focus:border-on-surface focus:ring-0 border-t-0 border-x-0 px-0 py-3 text-sm tracking-wide outline-none" type="text" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] uppercase tracking-widest font-bold mb-1 block">City *</label>
-                    <input 
-                      value={shipping.city} onChange={e => setShipping({...shipping, city: e.target.value})}
-                      className="w-full bg-transparent border-b border-outline-variant/30 focus:border-on-surface focus:ring-0 border-t-0 border-x-0 px-0 py-3 text-sm tracking-wide outline-none" type="text" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] uppercase tracking-widest font-bold mb-1 block">Postal Code</label>
-                    <input 
-                      value={shipping.postalCode} onChange={e => setShipping({...shipping, postalCode: e.target.value})}
-                      className="w-full bg-transparent border-b border-outline-variant/30 focus:border-on-surface focus:ring-0 border-t-0 border-x-0 px-0 py-3 text-sm tracking-wide outline-none" type="text" />
-                  </div>
-                </div>
-              </section>
-
-              <section>
-                <h2 className="font-headline text-3xl mb-10">Payment Method</h2>
-                <div className="space-y-4">
-                  <label className={`flex items-center p-6 bg-surface-container-low rounded-lg cursor-pointer border transition-all ${shipping.paymentMethod === 'Cash on Delivery' ? 'border-secondary' : 'border-transparent hover:border-outline-variant/30'}`}>
-                    <input checked={shipping.paymentMethod === 'Cash on Delivery'} onChange={() => setShipping({...shipping, paymentMethod: 'Cash on Delivery'})} className="text-on-surface focus:ring-on-surface mr-6 accent-on-surface" name="payment" type="radio" />
-                    <div className="flex-1 flex items-center gap-4">
-                      <span className="material-symbols-outlined text-outline">payments</span>
-                      <span className="uppercase tracking-[0.2em] text-[10px] font-bold">Cash on Delivery</span>
-                    </div>
-                  </label>
-                  <div className={`flex flex-col p-6 bg-surface-container-low rounded-lg border transition-all ${shipping.paymentMethod === 'Online Payment' ? 'border-secondary' : 'border-transparent hover:border-outline-variant/30'}`}>
-                    <label className="flex items-center cursor-pointer">
-                      <input checked={shipping.paymentMethod === 'Online Payment'} onChange={() => setShipping({...shipping, paymentMethod: 'Online Payment'})} className="text-on-surface focus:ring-on-surface mr-6 accent-on-surface" name="payment" type="radio" />
-                      <div className="flex-1 flex items-center gap-4">
-                        <span className="material-symbols-outlined text-outline">credit_card</span>
-                        <span className="uppercase tracking-[0.2em] text-[10px] font-bold">Online Payment (UPI)</span>
-                      </div>
-                    </label>
-                    {shipping.paymentMethod === 'Online Payment' && (
-                      <div className="mt-4 ml-10 p-4 bg-surface-container-lowest border border-outline-variant/20 rounded text-sm">
-                        <p className="font-bold text-xs uppercase tracking-widest text-on-surface mb-2">Scan & Pay</p>
-                        <p className="text-on-surface-variant text-xs mb-1">Please make the payment to the following UPI ID:</p>
-                        <p className="font-bold text-secondary text-base">9940984501@ybl</p>
-                        <p className="text-[10px] text-outline mt-2 italic">* Your order will be processed once payment is confirmed.</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </section>
-            </div>
-
-            <div className="lg:col-span-5">
-              <div className="bg-surface-container-lowest p-8 lg:p-12 rounded-lg border border-outline-variant/10 sticky top-32">
-                <h2 className="font-headline text-2xl mb-8">Review Order</h2>
-                <div className="space-y-6 mb-10 max-h-64 overflow-y-auto pr-2">
-                  {cartItems.map((item, i) => (
-                    <div key={i} className="flex gap-4">
-                      <div className="w-16 h-20 bg-surface-container rounded-lg shrink-0">
-                        <img className="w-full h-full object-cover rounded-lg" src={item.image} alt={item.name} />
-                      </div>
-                      <div className="flex-1 text-[10px] uppercase tracking-widest">
-                        <p className="font-bold">{item.name}</p>
-                        <p className="text-outline-variant mt-1">{item.size}</p>
-                        <p className="mt-2 font-headline text-sm normal-case font-normal">{item.price}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                
-                {/* Coupon Code Section */}
-                <div className="mb-8 flex gap-2">
-                  <input 
-                    type="text" 
-                    placeholder="Enter Coupon Code" 
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value)}
-                    className="flex-1 bg-surface-container border border-outline-variant/30 rounded px-4 py-2 text-sm uppercase focus:outline-none focus:border-on-surface"
-                  />
-                  <button 
-                    onClick={applyCoupon}
-                    disabled={isApplyingCoupon || !couponCode}
-                    className="px-4 py-2 bg-on-surface text-surface text-xs font-bold uppercase tracking-widest rounded disabled:opacity-50"
-                  >
-                    Apply
-                  </button>
-                </div>
-
-                <div className="space-y-4 mb-10 pt-6 border-t border-outline-variant/10">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-on-surface-variant uppercase tracking-wider text-[10px]">Subtotal</span>
-                    <span className="font-headline text-base">₹{subtotal.toFixed(2)}</span>
-                  </div>
-                  {discountAmount > 0 && (
-                    <div className="flex justify-between text-sm text-secondary">
-                      <span className="uppercase tracking-wider text-[10px]">Discount</span>
-                      <span className="font-headline text-base">- ₹{discountAmount.toFixed(2)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-sm">
-                    <span className="text-on-surface-variant uppercase tracking-wider text-[10px]">Shipping</span>
-                    <span className="font-headline text-base">FREE</span>
+
+                  <div className="space-y-6">
+                    <div>
+                      <label className="text-[10px] uppercase tracking-widest font-bold mb-2 block">Full Name</label>
+                      <input value={shipping.fullName} onChange={e => setShipping({...shipping, fullName: e.target.value})} className="w-full bg-surface border border-outline-variant/30 rounded-lg px-4 py-3 text-sm focus:border-on-surface focus:ring-1 focus:ring-on-surface outline-none transition-all" type="text" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] uppercase tracking-widest font-bold mb-2 block">Address</label>
+                      <input value={shipping.address} onChange={e => setShipping({...shipping, address: e.target.value})} className="w-full bg-surface border border-outline-variant/30 rounded-lg px-4 py-3 text-sm focus:border-on-surface focus:ring-1 focus:ring-on-surface outline-none transition-all" type="text" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-[10px] uppercase tracking-widest font-bold mb-2 block">City</label>
+                        <input value={shipping.city} onChange={e => setShipping({...shipping, city: e.target.value})} className="w-full bg-surface border border-outline-variant/30 rounded-lg px-4 py-3 text-sm focus:border-on-surface focus:ring-1 focus:ring-on-surface outline-none transition-all" type="text" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] uppercase tracking-widest font-bold mb-2 block">Postal Code</label>
+                        <input value={shipping.postalCode} onChange={e => setShipping({...shipping, postalCode: e.target.value})} className="w-full bg-surface border border-outline-variant/30 rounded-lg px-4 py-3 text-sm focus:border-on-surface focus:ring-1 focus:ring-on-surface outline-none transition-all" type="text" />
+                      </div>
+                    </div>
                   </div>
-                  <div className="pt-4 border-t border-outline-variant/10 flex justify-between">
-                    <span className="font-bold uppercase tracking-[0.2em] text-xs">Final Amount</span>
-                    <span className="font-headline text-3xl">₹{finalTotal.toFixed(2)}</span>
+                </motion.div>
+              )}
+
+              {currentStep === 2 && (
+                <motion.div key="step2" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-8">
+                  <h2 className="font-headline text-3xl mb-8">Delivery Method</h2>
+                  <div className="p-6 border-2 border-secondary bg-secondary/5 rounded-xl flex items-center justify-between cursor-pointer">
+                    <div className="flex items-center gap-4">
+                      <Truck size={24} className="text-secondary" strokeWidth={1.5} />
+                      <div>
+                        <p className="font-bold text-sm">Premium Standard Delivery</p>
+                        <p className="text-xs text-on-surface-variant mt-1">3-5 Business Days</p>
+                      </div>
+                    </div>
+                    <span className="font-headline font-semibold">Free</span>
                   </div>
-                </div>
-                
+                </motion.div>
+              )}
+
+              {currentStep === 3 && (
+                <motion.div key="step3" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-8">
+                  <h2 className="font-headline text-3xl mb-8">Payment Method</h2>
+                  <div className="space-y-4">
+                    <label className={`flex items-center p-6 bg-surface border shadow-sm rounded-xl cursor-pointer transition-all ${shipping.paymentMethod === 'Cash on Delivery' ? 'border-secondary ring-1 ring-secondary bg-secondary/5' : 'border-outline-variant/20 hover:border-outline-variant/50'}`}>
+                      <input checked={shipping.paymentMethod === 'Cash on Delivery'} onChange={() => setShipping({...shipping, paymentMethod: 'Cash on Delivery'})} className="text-secondary focus:ring-secondary mr-6 accent-secondary" name="payment" type="radio" />
+                      <div className="flex-1 flex items-center gap-4">
+                        <Banknote size={24} strokeWidth={1.5} className={shipping.paymentMethod === 'Cash on Delivery' ? "text-secondary" : "text-outline"} />
+                        <span className="uppercase tracking-[0.2em] text-xs font-bold">Cash on Delivery</span>
+                      </div>
+                    </label>
+                    <div className={`flex flex-col p-6 bg-surface border shadow-sm rounded-xl transition-all ${shipping.paymentMethod === 'Online Payment' ? 'border-secondary ring-1 ring-secondary bg-secondary/5' : 'border-outline-variant/20 hover:border-outline-variant/50'}`}>
+                      <label className="flex items-center cursor-pointer">
+                        <input checked={shipping.paymentMethod === 'Online Payment'} onChange={() => setShipping({...shipping, paymentMethod: 'Online Payment'})} className="text-secondary focus:ring-secondary mr-6 accent-secondary" name="payment" type="radio" />
+                        <div className="flex-1 flex items-center gap-4">
+                          <CreditCard size={24} strokeWidth={1.5} className={shipping.paymentMethod === 'Online Payment' ? "text-secondary" : "text-outline"} />
+                          <span className="uppercase tracking-[0.2em] text-xs font-bold">Online Payment (UPI)</span>
+                        </div>
+                      </label>
+                      {shipping.paymentMethod === 'Online Payment' && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-6 ml-10 p-5 bg-surface rounded-lg shadow-inner border border-outline-variant/10 text-sm">
+                          <p className="font-bold text-[10px] uppercase tracking-widest text-on-surface mb-2">Scan & Pay</p>
+                          <p className="text-on-surface-variant text-xs mb-1">Please make the payment to the following UPI ID:</p>
+                          <p className="font-headline text-secondary text-xl mt-2">9940984501@ybl</p>
+                        </motion.div>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {currentStep === 4 && (
+                <motion.div key="step4" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-8">
+                  <h2 className="font-headline text-3xl mb-8">Review Your Order</h2>
+                  
+                  <div className="bg-surface border border-outline-variant/20 rounded-2xl p-8 shadow-sm">
+                    <h3 className="text-[10px] uppercase tracking-widest font-bold text-outline mb-6">Order Items</h3>
+                    <div className="space-y-6">
+                      {cartItems.map((item, i) => (
+                        <div key={i} className="flex gap-4">
+                          <div className="w-16 h-24 bg-surface-container rounded shrink-0">
+                            <img className="w-full h-full object-cover rounded" src={item.image} alt={item.name} />
+                          </div>
+                          <div className="flex-1 flex flex-col justify-center">
+                            <p className="font-bold text-xs uppercase tracking-widest">{item.name}</p>
+                            <p className="text-outline text-xs mt-1 uppercase">Size: {item.size} | Qty: {item.quantity}</p>
+                            <p className="mt-2 font-headline">{item.price}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-surface border border-outline-variant/20 rounded-2xl p-6 shadow-sm">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-[10px] uppercase tracking-widest font-bold text-outline">Shipping To</h3>
+                        <button onClick={() => setCurrentStep(1)} className="text-[10px] uppercase font-bold text-secondary hover:underline">Edit</button>
+                      </div>
+                      <p className="text-sm font-bold">{shipping.fullName}</p>
+                      <p className="text-xs text-on-surface-variant mt-1">{shipping.address}, {shipping.city}</p>
+                    </div>
+                    <div className="bg-surface border border-outline-variant/20 rounded-2xl p-6 shadow-sm">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-[10px] uppercase tracking-widest font-bold text-outline">Payment</h3>
+                        <button onClick={() => setCurrentStep(3)} className="text-[10px] uppercase font-bold text-secondary hover:underline">Edit</button>
+                      </div>
+                      <p className="text-sm font-bold">{shipping.paymentMethod}</p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <div className="mt-12 flex justify-between">
+              {currentStep > 1 && currentStep < 5 && (
                 <button 
-                  onClick={handleCompleteOrder}
-                  disabled={isSubmitting}
-                  className="w-full bg-secondary text-on-secondary py-5 rounded-full uppercase tracking-[0.2em] text-xs font-bold hover:bg-on-surface transition-all disabled:opacity-50"
+                  onClick={() => setCurrentStep(prev => prev - 1)}
+                  className="px-8 py-4 text-[10px] uppercase font-bold tracking-widest text-outline hover:text-on-surface transition-colors"
                 >
-                  {isSubmitting ? 'Processing...' : 'Complete Order'}
+                  Back
                 </button>
+              )}
+              {currentStep < 4 ? (
+                <button 
+                  onClick={handleNextStep}
+                  className="ml-auto px-12 py-4 bg-on-surface text-surface text-[10px] uppercase font-bold tracking-widest rounded hover:bg-secondary transition-all shadow-md active:scale-95"
+                >
+                  Continue to {steps[currentStep].title}
+                </button>
+              ) : (
+                <button 
+                  onClick={handlePlaceOrder}
+                  disabled={isSubmitting}
+                  className="ml-auto px-12 py-4 bg-secondary text-surface text-[10px] uppercase font-bold tracking-widest rounded hover:bg-on-surface transition-all shadow-md active:scale-95 disabled:opacity-50"
+                >
+                  {isSubmitting ? 'Processing...' : 'Place Order'}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Sticky Summary Widget */}
+          <div className="lg:col-span-5 relative">
+            <div className="bg-surface/80 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-outline-variant/20 p-8 rounded-2xl sticky top-32">
+              <h3 className="font-headline text-2xl mb-8">Summary</h3>
+              
+              <div className="space-y-4 mb-8 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-on-surface-variant uppercase tracking-wider text-[10px]">Subtotal</span>
+                  <span className="font-headline font-medium text-base">₹{subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-on-surface-variant uppercase tracking-wider text-[10px]">Delivery</span>
+                  <span className="font-headline font-medium text-base">FREE</span>
+                </div>
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-secondary">
+                    <span className="uppercase tracking-wider text-[10px]">Discount</span>
+                    <span className="font-headline font-medium text-base">- ₹{discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="pt-6 mt-6 border-t border-outline-variant/10 flex justify-between items-center">
+                  <span className="font-bold uppercase tracking-[0.2em] text-xs">Total</span>
+                  <span className="font-headline text-3xl">₹{finalTotal.toFixed(2)}</span>
+                </div>
               </div>
             </div>
           </div>
-        )}
+
+        </div>
       </main>
       <Footer />
     </>

@@ -7,6 +7,13 @@ import { fetchProducts, saveProduct, deleteProduct, fetchOrders, fetchAllReviews
 import { storage, BUCKET_ID, APPWRITE_PROJECT_ID, APPWRITE_ENDPOINT, ID } from "@/lib/appwrite";
 import { useToast } from "@/components/ToastProvider";
 import Link from "next/link";
+import { 
+  LayoutDashboard, Package, ShoppingCart, MessageSquare, Settings, 
+  Ticket, LogOut, TrendingUp, Users, DollarSign, Plus, Edit2, 
+  Trash2, X, Search, CheckCircle, Truck, Eye, Check, AlertCircle, RefreshCcw, Menu, Bell, Star
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+
 
 export default function Admin() {
   const router = useRouter();
@@ -26,10 +33,16 @@ export default function Admin() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
+  const [restockProduct, setRestockProduct] = useState(null);
+  const [restockQuantities, setRestockQuantities] = useState({ XS: 0, S: 0, M: 0, L: 0, XL: 0 });
 
   // Orders Filter State
   const [orderSort, setOrderSort] = useState("asc"); // 'asc' for oldest first, 'desc' for newest first
   const [orderDateFilter, setOrderDateFilter] = useState("");
+  const [selectedDossierOrder, setSelectedDossierOrder] = useState(null);
+  const [trackingNumber, setTrackingNumber] = useState("");
+
 
   // Form State
   const [category, setCategory] = useState("");
@@ -80,15 +93,20 @@ export default function Admin() {
     }
   }
 
-  const handleDelete = async (id) => {
-    if (confirm('Are you sure you want to delete this dress?')) {
+  const confirmDelete = (id) => {
+    setProductToDelete(id);
+  };
+
+  const executeDelete = async () => {
+    if (productToDelete) {
       try {
-        await deleteProduct(id);
+        await deleteProduct(productToDelete);
         loadData();
         showToast('Product deleted successfully.', 'success');
       } catch (err) {
         showToast('Failed to delete product.', 'error');
       }
+      setProductToDelete(null);
     }
   };
 
@@ -167,15 +185,32 @@ export default function Admin() {
     }
   };
 
-  const handleRestock = async (product) => {
+  const openRestockModal = (product) => {
+    setRestockProduct(product);
+    setRestockQuantities({ XS: 0, S: 0, M: 0, L: 0, XL: 0 });
+  };
+
+  const executeRestock = async () => {
+    if (!restockProduct) return;
     try {
-      const updatedInventory = { ...product.inventory };
+      const updatedInventory = { ...restockProduct.inventory };
       ['XS', 'S', 'M', 'L', 'XL'].forEach(s => {
-        updatedInventory[s] = (parseInt(updatedInventory[s]) || 0) + 10;
+        const qtyToAdd = parseInt(restockQuantities[s]) || 0;
+        updatedInventory[s] = (parseInt(updatedInventory[s]) || 0) + qtyToAdd;
       });
-      await saveProduct({ ...product, inventory: updatedInventory });
+      
+      let sizeString = '';
+      if (restockProduct.category === 'Fashion Dress' || !restockProduct.category) {
+        const availableSizes = Object.entries(updatedInventory)
+          .filter(([_, qty]) => qty > 0)
+          .map(([size]) => size);
+        sizeString = availableSizes.join(', ');
+      }
+
+      await saveProduct({ ...restockProduct, inventory: updatedInventory, size: sizeString });
       loadData();
       showToast('Product restocked successfully!', 'success');
+      setRestockProduct(null);
     } catch (err) {
       console.error(err);
       showToast('Failed to restock product.', 'error');
@@ -195,9 +230,9 @@ export default function Admin() {
     }
   };
 
-  const handleUpdateOrderStatus = async (orderId, status) => {
+  const handleUpdateOrderStatus = async (orderId, status, updatedShippingAddress = null) => {
     try {
-      await updateOrderStatus(orderId, status);
+      await updateOrderStatus(orderId, status, updatedShippingAddress);
       loadData();
       showToast(`Order status updated to ${status}.`, "success");
     } catch (err) {
@@ -207,7 +242,7 @@ export default function Admin() {
 
   if (loading) {
     return (
-      <div className="bg-background min-h-screen flex items-center justify-center">
+      <div className="bg-surface text-on-surface min-h-screen flex items-center justify-center">
         <p className="text-outline text-sm">Verifying access...</p>
       </div>
     );
@@ -277,7 +312,7 @@ export default function Admin() {
   };
 
   return (
-    <div className="bg-background text-on-background font-body min-h-screen flex flex-col">
+    <div className="bg-surface text-on-surface text-on-background font-body min-h-screen flex flex-col">
       <header className="fixed top-0 w-full z-50 px-6 md:px-12 py-6 bg-[#fbf9f7]/70 dark:bg-[#303331]/70 backdrop-blur-md flex justify-between items-center max-w-[1920px] mx-auto border-b border-outline-variant/10">
         <div className="flex items-center gap-4">
           <button className="md:hidden p-2 -ml-2" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
@@ -295,38 +330,42 @@ export default function Admin() {
         {isMobileMenuOpen && (
           <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setIsMobileMenuOpen(false)} />
         )}
-        <aside className={`w-64 fixed left-0 top-24 bottom-0 px-8 py-8 border-r border-outline-variant/10 z-40 bg-background transition-transform duration-300 md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <aside className={`w-64 fixed left-0 top-24 bottom-0 px-8 py-8 border-r border-outline-variant/10 z-40 bg-surface text-on-surface transition-transform duration-300 md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <nav className="space-y-8 overflow-y-auto h-full pb-20">
             <div>
               <p className="text-[10px] uppercase tracking-[0.2em] text-outline mb-6 font-semibold">Core Management</p>
               <ul className="space-y-4">
                 <li onClick={() => { setActiveTab('Dashboard'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 transition-colors cursor-pointer ${activeTab === 'Dashboard' ? 'text-secondary' : 'text-on-surface-variant hover:text-secondary'}`}>
-                  <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: activeTab === 'Dashboard' ? "'FILL' 1" : "'FILL' 0" }}>dashboard</span>
+                  <span><LayoutDashboard size={20} strokeWidth={1.5} /></span>
                   <span className="text-sm font-medium tracking-wide">Dashboard</span>
                 </li>
                 <li onClick={() => { setActiveTab('Products'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 transition-colors cursor-pointer ${activeTab === 'Products' ? 'text-secondary' : 'text-on-surface-variant hover:text-secondary'}`}>
-                  <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: activeTab === 'Products' ? "'FILL' 1" : "'FILL' 0" }}>inventory_2</span>
+                  <span><Package size={20} strokeWidth={1.5} /></span>
                   <span className="text-sm font-medium tracking-wide">Products</span>
                 </li>
                 <li onClick={() => { setActiveTab('Orders'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 transition-colors cursor-pointer ${activeTab === 'Orders' ? 'text-secondary' : 'text-on-surface-variant hover:text-secondary'}`}>
-                  <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: activeTab === 'Orders' ? "'FILL' 1" : "'FILL' 0" }}>shopping_cart</span>
+                  <span><ShoppingCart size={20} strokeWidth={1.5} /></span>
                   <span className="text-sm font-medium tracking-wide">Orders</span>
                 </li>
                 <li onClick={() => { setActiveTab('Customers'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 transition-colors cursor-pointer ${activeTab === 'Customers' ? 'text-secondary' : 'text-on-surface-variant hover:text-secondary'}`}>
-                  <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: activeTab === 'Customers' ? "'FILL' 1" : "'FILL' 0" }}>group</span>
+                  <span><Users size={20} strokeWidth={1.5} /></span>
                   <span className="text-sm font-medium tracking-wide">Customer Feedback</span>
                 </li>
                 <li onClick={() => { setActiveTab('Coupons'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 transition-colors cursor-pointer ${activeTab === 'Coupons' ? 'text-secondary' : 'text-on-surface-variant hover:text-secondary'}`}>
-                  <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: activeTab === 'Coupons' ? "'FILL' 1" : "'FILL' 0" }}>local_activity</span>
+                  <span><Ticket size={20} strokeWidth={1.5} /></span>
                   <span className="text-sm font-medium tracking-wide">Coupons</span>
                 </li>
                 <li onClick={() => { setActiveTab('Refunds'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 transition-colors cursor-pointer ${activeTab === 'Refunds' ? 'text-secondary' : 'text-on-surface-variant hover:text-secondary'}`}>
-                  <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: activeTab === 'Refunds' ? "'FILL' 1" : "'FILL' 0" }}>currency_exchange</span>
+                  <span><DollarSign size={20} strokeWidth={1.5} /></span>
                   <span className="text-sm font-medium tracking-wide">Refund Requests</span>
                 </li>
                 <li onClick={() => { setActiveTab('Notifications'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 transition-colors cursor-pointer ${activeTab === 'Notifications' ? 'text-secondary' : 'text-on-surface-variant hover:text-secondary'}`}>
-                  <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: activeTab === 'Notifications' ? "'FILL' 1" : "'FILL' 0" }}>notifications</span>
+                  <span><Bell size={20} strokeWidth={1.5} /></span>
                   <span className="text-sm font-medium tracking-wide flex-1">Notifications</span>
+                </li>
+                <li onClick={() => { setActiveTab('Site Settings'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 transition-colors cursor-pointer ${activeTab === 'Site Settings' ? 'text-secondary' : 'text-on-surface-variant hover:text-secondary'}`}>
+                  <span><Settings size={20} strokeWidth={1.5} /></span>
+                  <span className="text-sm font-medium tracking-wide flex-1">Site Settings</span>
                 </li>
               </ul>
             </div>
@@ -335,23 +374,56 @@ export default function Admin() {
 
         <main className="flex-1 ml-0 md:ml-64 px-8 md:px-12 pb-20">
           <section className="py-10">
-            <h1 className="font-headline text-4xl mb-2 text-on-surface">Azhagii {activeTab}</h1>
+            <h1 className="font-headline text-4xl md:text-5xl tracking-tight mb-2 text-on-surface">Azhagii <span className="italic font-normal">{activeTab}</span></h1>
             <p className="text-on-surface-variant tracking-wide text-sm uppercase">Management Dashboard</p>
           </section>
+
+          {activeTab === 'Site Settings' && (
+            <div className="space-y-12">
+               <section className="bg-surface/80 backdrop-blur-xl p-8 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-outline-variant/20">
+                 <h2 className="font-headline text-2xl mb-6 text-on-surface">Change Home Hero Image</h2>
+                 <form onSubmit={async (e) => {
+                   e.preventDefault();
+                   const form = e.target;
+                   const formData = new FormData(form);
+                   const file = formData.get('image');
+                   if (!file || file.size === 0) return;
+                   
+                   try {
+                     const res = await fetch('/api/upload-hero', { method: 'POST', body: formData });
+                     if (res.ok) {
+                       showToast('Hero image updated successfully. Refresh home page to see changes.', 'success');
+                       form.reset();
+                     } else {
+                       showToast('Failed to update image.', 'error');
+                     }
+                   } catch (err) {
+                     showToast('An error occurred.', 'error');
+                   }
+                 }}>
+                   <div className="mb-6">
+                     <label className="block text-xs uppercase tracking-widest text-outline mb-2">Upload New High-Quality Image</label>
+                     <input type="file" name="image" accept="image/*" className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-secondary file:text-surface hover:file:bg-on-surface" required />
+                   </div>
+                   <button type="submit" className="bg-on-surface text-surface px-6 py-3 text-xs uppercase tracking-widest hover:bg-secondary transition-colors rounded">Update Image</button>
+                 </form>
+               </section>
+            </div>
+          )}
 
           {activeTab === 'Dashboard' && (
             <div className="space-y-12">
               <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/5">
+                <div className="bg-surface/80 backdrop-blur-xl p-8 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-outline-variant/20">
                   <h3 className="text-xs uppercase tracking-[0.2em] text-outline mb-2 font-bold">Total Earnings</h3>
                   <p className="font-headline text-3xl">₹{totalEarnings.toFixed(2)}</p>
                 </div>
-                <div className="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/5">
+                <div className="bg-surface/80 backdrop-blur-xl p-8 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-outline-variant/20">
                   <h3 className="text-xs uppercase tracking-[0.2em] text-outline mb-2 font-bold">Payment Methods</h3>
                   <p className="text-sm">Online Orders: <span className="font-bold">{onlineOrders}</span></p>
                   <p className="text-sm">Offline Orders: <span className="font-bold">{offlineOrders}</span></p>
                 </div>
-                <div className="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/5 flex gap-4 items-center">
+                <div className="bg-surface/80 backdrop-blur-xl p-8 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-outline-variant/20 flex gap-4 items-center">
                   {topSellingProduct ? (
                     <>
                       <img src={Array.isArray(topSellingProduct.images) ? topSellingProduct.images[0] : topSellingProduct.image} alt={topSellingProduct.name} className="w-16 h-20 object-cover rounded" />
@@ -368,7 +440,7 @@ export default function Admin() {
               </section>
 
               <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/5">
+                <div className="bg-surface/80 backdrop-blur-xl p-8 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-outline-variant/20">
                   <h3 className="text-xs uppercase tracking-[0.2em] text-outline mb-6 font-bold">Monthly Earnings</h3>
                   <div className="space-y-4">
                     {Object.keys(monthlyEarnings).length === 0 ? (
@@ -384,7 +456,7 @@ export default function Admin() {
                   </div>
                 </div>
 
-                <div className="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/5">
+                <div className="bg-surface/80 backdrop-blur-xl p-8 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-outline-variant/20">
                   <h3 className="text-xs uppercase tracking-[0.2em] text-outline mb-6 font-bold">Stock Overview</h3>
                   <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
                     {Object.values(products).map(product => (
@@ -411,10 +483,10 @@ export default function Admin() {
 
           {activeTab === 'Notifications' && (
             <section className="space-y-8">
-              <div className="bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-outline-variant/5">
+              <div className="bg-surface/80 backdrop-blur-xl p-8 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-outline-variant/20">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="font-headline text-2xl text-error flex items-center gap-2">
-                    <span className="material-symbols-outlined">warning</span> Out of Stock Alerts
+                    <AlertCircle size={32} strokeWidth={1.5} /> Out of Stock Alerts
                   </h3>
                   {(outOfStock.length > 0 || lowStock.length > 0) && (
                     <button onClick={handleClearAllAlerts} className="text-xs uppercase tracking-widest text-outline hover:text-on-surface font-bold border border-outline/20 px-4 py-2 rounded">
@@ -436,14 +508,14 @@ export default function Admin() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button onClick={() => handleRestock(alert.product)} className="bg-on-surface text-surface px-4 py-2 rounded text-[10px] font-bold uppercase tracking-wider hover:bg-secondary transition-colors">
-                            Restock (Add 10)
+                          <button onClick={() => openRestockModal(alert.product)} className="bg-on-surface text-surface px-4 py-2 rounded text-[10px] font-bold uppercase tracking-wider hover:bg-secondary transition-colors">
+                            Restock
                           </button>
-                          <button onClick={() => handleDelete(alert.product.$id)} className="bg-error text-surface px-4 py-2 rounded text-[10px] font-bold uppercase tracking-wider hover:bg-error/80 transition-colors">
+                          <button onClick={() => confirmDelete(alert.product.id)} className="bg-error text-surface px-4 py-2 rounded text-[10px] font-bold uppercase tracking-wider hover:bg-error/80 transition-colors">
                             Remove Product
                           </button>
                           <button onClick={() => handleDismissAlert(alert.alertId)} className="p-2 text-outline hover:text-on-surface">
-                            <span className="material-symbols-outlined text-lg">close</span>
+                            <X size={24} strokeWidth={1.5} />
                           </button>
                         </div>
                       </div>
@@ -452,9 +524,9 @@ export default function Admin() {
                 )}
               </div>
 
-              <div className="bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-outline-variant/5">
+              <div className="bg-surface/80 backdrop-blur-xl p-8 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-outline-variant/20">
                 <h3 className="font-headline text-2xl mb-6 text-secondary flex items-center gap-2">
-                  <span className="material-symbols-outlined">inventory</span> Low Stock Alerts
+                  <Package size={24} strokeWidth={1.5} /> Low Stock Alerts
                 </h3>
                 {lowStock.length === 0 ? (
                   <p className="text-outline text-sm">No low stock items.</p>
@@ -470,11 +542,11 @@ export default function Admin() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button onClick={() => handleRestock(alert.product)} className="bg-on-surface text-surface px-4 py-2 rounded text-[10px] font-bold uppercase tracking-wider hover:bg-secondary transition-colors">
-                            Restock (Add 10)
+                          <button onClick={() => openRestockModal(alert.product)} className="bg-on-surface text-surface px-4 py-2 rounded text-[10px] font-bold uppercase tracking-wider hover:bg-secondary transition-colors">
+                            Restock
                           </button>
                           <button onClick={() => handleDismissAlert(alert.alertId)} className="p-2 text-outline hover:text-on-surface">
-                            <span className="material-symbols-outlined text-lg">close</span>
+                            <X size={24} strokeWidth={1.5} />
                           </button>
                         </div>
                       </div>
@@ -499,7 +571,7 @@ export default function Admin() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-surface-container-low/50 text-[10px] uppercase tracking-[0.15em] text-outline font-bold">
+                    <tr className="bg-surface-container-low/20 text-[10px] uppercase tracking-[0.15em] text-outline font-bold">
                       <th className="px-8 py-4">Image</th>
                       <th className="px-8 py-4">Name</th>
                       <th className="px-8 py-4">Category</th>
@@ -508,7 +580,7 @@ export default function Admin() {
                       <th className="px-8 py-4 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-outline-variant/5">
+                  <tbody className="divide-y divide-outline-variant/10">
                     {Object.keys(products).length === 0 ? (
                       <tr><td colSpan="6" className="px-8 py-5 text-center text-sm text-outline">No products found.</td></tr>
                     ) : (
@@ -527,7 +599,7 @@ export default function Admin() {
                             <td className="px-8 py-5 text-sm">{product.price}</td>
                             <td className="px-8 py-5 text-sm text-outline">{stockText}</td>
                             <td className="px-8 py-5 text-right">
-                              <button onClick={() => handleDelete(id)} className="text-error hover:text-error-dim transition-colors material-symbols-outlined text-xl">delete</button>
+                              <button onClick={() => confirmDelete(id)} className="text-red-500 hover:text-red-700 transition-colors material-symbols-outlined text-xl">delete</button>
                             </td>
                           </tr>
                         );
@@ -539,88 +611,196 @@ export default function Admin() {
             </section>
           )}
 
+          
           {activeTab === 'Orders' && (
-            <section className="mb-12 bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden border border-outline-variant/5">
-              <div className="px-8 py-6 border-b border-outline-variant/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <h3 className="font-headline text-xl">Customer Orders</h3>
-                <div className="flex gap-4 items-center">
-                  <div>
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-outline mr-2">Date:</label>
-                    <input
-                      type="date"
-                      value={orderDateFilter}
-                      onChange={(e) => setOrderDateFilter(e.target.value)}
-                      className="bg-surface-container-low border-none rounded px-3 py-1.5 text-sm focus:ring-1 focus:ring-secondary outline-none text-on-surface"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-outline mr-2">Sort:</label>
-                    <select
-                      value={orderSort}
-                      onChange={(e) => setOrderSort(e.target.value)}
-                      className="bg-surface-container-low border-none rounded px-3 py-1.5 text-sm focus:ring-1 focus:ring-secondary outline-none text-on-surface"
-                    >
-                      <option value="asc">Oldest First</option>
-                      <option value="desc">Newest First</option>
-                    </select>
-                  </div>
+            <section className="mb-12 space-y-6">
+              <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/10 p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex-1 bg-surface-container-low rounded-lg px-4 py-2 flex items-center gap-2 border border-outline-variant/10">
+                  <Search size={16} className="text-outline" />
+                  <input type="text" placeholder="Search by ID, client name..." className="bg-transparent border-none outline-none text-sm w-full" />
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => setOrderSort('desc')} className="bg-on-surface text-surface px-6 py-2 rounded font-label text-xs uppercase tracking-widest hover:bg-secondary transition-colors">All</button>
+                  <button className="text-outline px-4 py-2 rounded font-label text-xs uppercase tracking-widest hover:text-on-surface transition-colors">Processing</button>
+                  <button className="text-outline px-4 py-2 rounded font-label text-xs uppercase tracking-widest hover:text-on-surface transition-colors">Shipped / Transit</button>
+                  <button className="text-outline px-4 py-2 rounded font-label text-xs uppercase tracking-widest hover:text-on-surface transition-colors">Delivered</button>
                 </div>
               </div>
-              <div className="p-8 space-y-6">
-                {orders.length === 0 ? (
-                  <p className="text-sm text-outline">No orders have been placed yet.</p>
-                ) : (
-                  orders
-                    .filter(order => {
-                      if (!orderDateFilter) return true;
-                      const orderDate = new Date(order.$createdAt).toISOString().split('T')[0];
-                      return orderDate === orderDateFilter;
-                    })
-                    .sort((a, b) => {
-                      const dateA = new Date(a.$createdAt).getTime();
-                      const dateB = new Date(b.$createdAt).getTime();
-                      return orderSort === 'asc' ? dateA - dateB : dateB - dateA;
-                    })
-                    .map(order => {
-                      const items = JSON.parse(order.items || '[]');
-                      const addr = JSON.parse(order.shippingAddress || '{}');
-                      return (
-                        <div key={order.$id} className="border border-outline-variant/20 rounded-lg p-6 bg-surface-container-low/30">
-                          <div className="flex justify-between items-start mb-6 border-b border-outline-variant/10 pb-4">
-                            <div>
-                              <p className="text-[10px] font-bold uppercase tracking-widest text-outline">Order ID: {order.$id}</p>
-                              <p className="text-sm font-bold mt-1 text-on-surface">{addr.fullName}</p>
-                              <p className="text-sm text-on-surface-variant">{addr.address}, {addr.city} {addr.postalCode}</p>
-                              <p className="text-xs font-bold uppercase tracking-widest text-secondary mt-2">Payment: {addr.paymentMethod || 'Cash on Delivery'}</p>
-                            </div>
-                            <div className="text-right flex flex-col items-end gap-2">
-                              <span className="bg-secondary/10 text-secondary px-3 py-1 rounded text-[10px] uppercase tracking-widest font-bold">{order.status}</span>
-                              <p className="font-headline text-xl mt-1">₹{order.total.toFixed(2)}</p>
 
-                              {order.status === 'Pending' && (
-                                <div className="flex gap-2 mt-2">
-                                  <button onClick={() => handleUpdateOrderStatus(order.$id, 'Shipped')} className="bg-on-surface text-surface px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-widest hover:bg-secondary transition-all">Mark Shipped</button>
-                                  <button onClick={() => handleUpdateOrderStatus(order.$id, 'Cancelled')} className="border border-error/50 text-error px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-widest hover:bg-error hover:text-white transition-all">Cancel</button>
+              <div className="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden border border-outline-variant/10">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-surface-container-low/20 text-[10px] uppercase tracking-[0.15em] text-outline font-bold">
+                      <th className="px-8 py-4 w-1/5">Order Details</th>
+                      <th className="px-8 py-4 w-1/4">Client Information</th>
+                      <th className="px-8 py-4">Total Bill</th>
+                      <th className="px-8 py-4">Status</th>
+                      <th className="px-8 py-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-outline-variant/10">
+                    {orders.length === 0 ? (
+                      <tr><td colSpan="5" className="px-8 py-5 text-center text-sm text-outline">No orders found.</td></tr>
+                    ) : (
+                      orders
+                        .sort((a, b) => {
+                          const dateA = new Date(a.$createdAt).getTime();
+                          const dateB = new Date(b.$createdAt).getTime();
+                          return orderSort === 'asc' ? dateA - dateB : dateB - dateA;
+                        })
+                        .map(order => {
+                          const addr = JSON.parse(order.shippingAddress || '{}');
+                          const orderDate = new Date(order.$createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                          const isProcessing = order.status === 'Pending' || order.status === 'Processing';
+                          return (
+                            <tr key={order.$id} className="group hover:bg-surface-container-low/30 transition-colors">
+                              <td className="px-8 py-6 align-top">
+                                <p className="font-headline font-bold text-sm tracking-wide text-on-surface">#{order.$id.slice(0,8).toUpperCase()}</p>
+                                <p className="text-xs text-outline mt-1">{orderDate}</p>
+                              </td>
+                              <td className="px-8 py-6 align-top">
+                                <p className="font-bold text-sm text-on-surface">{addr.fullName}</p>
+                                <p className="text-xs text-outline mt-1">{addr.email}</p>
+                              </td>
+                              <td className="px-8 py-6 align-top">
+                                <p className="font-headline text-lg font-bold">₹{order.total.toFixed(0)}</p>
+                              </td>
+                              <td className="px-8 py-6 align-top">
+                                <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-[10px] uppercase tracking-widest font-bold ${isProcessing ? 'bg-[#f8d7da] text-[#721c24]' : order.status === 'Delivered' ? 'bg-[#d4edda] text-[#155724]' : 'bg-[#fff3cd] text-[#856404]'}`}>
+                                  {isProcessing ? 'Processing' : order.status}
+                                </span>
+                              </td>
+                              <td className="px-8 py-6 align-top text-right">
+                                <div className="flex items-center justify-end gap-3">
+                                  <button onClick={() => setSelectedDossierOrder(order)} className="p-2 text-outline hover:text-on-surface transition-colors bg-surface-container-low rounded-full">
+                                    <Eye size={16} strokeWidth={1.5} />
+                                  </button>
+                                  {isProcessing ? (
+                                    <button onClick={() => { setSelectedDossierOrder(order); setTrackingNumber(""); }} className="bg-[#7e572e] text-surface px-4 py-2 rounded flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:bg-[#5c3e1e] transition-colors">
+                                      <Truck size={14} /> Ship / Dispatch
+                                    </button>
+                                  ) : (
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-secondary flex items-center gap-1"><Check size={14} /> Dispatched</span>
+                                  )}
                                 </div>
-                              )}
+                              </td>
+                            </tr>
+                          );
+                        })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Order Dossier Modal */}
+              <AnimatePresence>
+                {selectedDossierOrder && (
+                  <motion.div 
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }} 
+                    exit={{ opacity: 0 }} 
+                    className="fixed inset-0 z-50 flex items-center justify-end bg-black/40 backdrop-blur-sm"
+                    onClick={() => setSelectedDossierOrder(null)}
+                  >
+                    <motion.div 
+                      initial={{ x: '100%' }} 
+                      animate={{ x: 0 }} 
+                      exit={{ x: '100%' }} 
+                      transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                      className="bg-surface w-full max-w-md h-full shadow-2xl flex flex-col"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      {(() => {
+                        const order = selectedDossierOrder;
+                        const addr = JSON.parse(order.shippingAddress || '{}');
+                        const items = JSON.parse(order.items || '[]');
+                        const isProcessing = order.status === 'Pending' || order.status === 'Processing';
+                        return (
+                          <>
+                            <div className="p-8 border-b border-outline-variant/10 flex justify-between items-start">
+                              <div>
+                                <h2 className="font-headline text-2xl text-on-surface italic">Order Dossier</h2>
+                                <p className="text-xs uppercase tracking-widest text-outline mt-1">#{order.$id}</p>
+                              </div>
+                              <button onClick={() => setSelectedDossierOrder(null)} className="p-2 text-outline hover:text-on-surface">
+                                <X size={20} strokeWidth={1.5} />
+                              </button>
                             </div>
-                          </div>
-                          <div className="space-y-4">
-                            {items.map((item, idx) => (
-                              <div key={idx} className="flex gap-4 items-center">
-                                <img src={item.image} className="w-12 h-16 rounded object-cover border border-outline-variant/20" />
-                                <div>
-                                  <p className="text-xs font-bold uppercase tracking-widest">{item.name}</p>
-                                  <p className="text-xs text-outline mt-1">Size: {item.size} | Price: {item.price}</p>
+                            
+                            <div className="p-8 flex-1 overflow-y-auto space-y-8">
+                              <div>
+                                <p className="text-[10px] uppercase tracking-widest text-outline font-bold mb-3">Order Status</p>
+                                <span className={`inline-flex px-4 py-1.5 rounded text-[10px] uppercase tracking-widest font-bold ${isProcessing ? 'bg-[#f8d7da] text-[#721c24]' : order.status === 'Delivered' ? 'bg-[#d4edda] text-[#155724]' : 'bg-[#fff3cd] text-[#856404]'}`}>
+                                  {isProcessing ? 'Processing' : order.status}
+                                </span>
+                              </div>
+
+                              <div>
+                                <p className="text-[10px] uppercase tracking-widest text-outline font-bold mb-3">Client Details</p>
+                                <div className="space-y-3 bg-surface-container-lowest p-4 rounded-lg border border-outline-variant/10">
+                                  <div className="flex gap-3 text-sm text-on-surface-variant"><UserCircle size={16} className="mt-0.5 text-outline" /> <span><span className="font-bold text-on-surface block">{addr.fullName}</span><span className="text-xs">Registered Atelier Guest</span></span></div>
+                                  <div className="flex gap-3 text-sm text-on-surface-variant"><MessageSquare size={16} className="text-outline" /> {addr.email}</div>
+                                  <div className="flex gap-3 text-sm text-on-surface-variant"><Bell size={16} className="text-outline" /> {addr.phone || 'N/A'}</div>
+                                  <div className="flex gap-3 text-sm text-on-surface-variant pt-2 border-t border-outline-variant/10">
+                                    <MapPin size={16} className="mt-0.5 text-outline" /> 
+                                    <span className="text-xs">
+                                      <span className="font-bold text-[10px] uppercase tracking-widest block text-outline mb-1">Shipping Address</span>
+                                      {addr.address}, {addr.city} - {addr.postalCode}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })
+
+                              <div>
+                                <p className="text-[10px] uppercase tracking-widest text-outline font-bold mb-3">Silhouettes Ordered</p>
+                                <div className="space-y-4">
+                                  {items.map((item, idx) => (
+                                    <div key={idx} className="flex gap-4 items-center bg-surface-container-lowest p-3 rounded border border-outline-variant/5">
+                                      <img src={item.image} className="w-12 h-16 rounded object-cover" />
+                                      <div className="flex-1">
+                                        <p className="font-bold text-sm text-on-surface">{item.name}</p>
+                                        <p className="text-xs text-outline mt-1 uppercase font-label">Size: {item.size} | Qty: {item.quantity || 1}</p>
+                                      </div>
+                                      <p className="font-headline font-bold text-sm">₹{(parseInt(item.price.replace(/[^0-9]/g, '')) * (item.quantity || 1)).toLocaleString('en-IN')}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div className="flex justify-between items-center pt-4 border-t border-outline-variant/10">
+                                <p className="text-[10px] uppercase tracking-widest text-outline font-bold">Grand Total (INR)</p>
+                                <p className="font-headline text-2xl font-bold">₹{order.total.toLocaleString('en-IN')}</p>
+                              </div>
+                            </div>
+
+                            {isProcessing && (
+                              <div className="p-8 border-t border-outline-variant/10 bg-surface-container-lowest flex flex-col gap-3">
+                                <input 
+                                  type="text" 
+                                  placeholder="Enter Tracking Number (e.g. TRK-98182)"
+                                  value={trackingNumber}
+                                  onChange={e => setTrackingNumber(e.target.value)}
+                                  className="w-full bg-surface-container-low border-none rounded p-3 text-sm outline-none focus:ring-1 focus:ring-[#7e572e]"
+                                />
+                                <button 
+                                  onClick={() => {
+                                    const updatedAddr = { ...addr, trackingNumber };
+                                    handleUpdateOrderStatus(order.$id, 'Shipped', JSON.stringify(updatedAddr));
+                                    setSelectedDossierOrder(null);
+                                  }}
+                                  className="w-full bg-[#7e572e] text-surface py-3 rounded text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-[#5c3e1e] transition-colors"
+                                >
+                                  <Truck size={16} /> Dispatch Indian Courier
+                                </button>
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </motion.div>
+                  </motion.div>
                 )}
-              </div>
+              </AnimatePresence>
             </section>
           )}
 
@@ -642,7 +822,7 @@ export default function Admin() {
                         </div>
                         <div className="flex text-secondary">
                           {[1, 2, 3, 4, 5].map(star => (
-                            <span key={star} className="material-symbols-outlined text-sm" style={{ fontVariationSettings: `'FILL' ${star <= review.rating ? 1 : 0}` }}>star</span>
+                            <Star key={star} size={14} strokeWidth={2} />
                           ))}
                         </div>
                       </div>
@@ -670,7 +850,7 @@ export default function Admin() {
                           </div>
                         ) : (
                           <button onClick={() => setReplyingTo(review.$id)} className="text-secondary text-[10px] font-bold uppercase tracking-widest hover:underline flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[14px]">reply</span> Reply to Customer
+                            <MessageSquare size={14} strokeWidth={1.5} /> Reply to Customer
                           </button>
                         )
                       )}
@@ -721,8 +901,8 @@ export default function Admin() {
                                 showToast('Failed to delete coupon.', 'error');
                               }
                             }
-                          }} className="text-error/50 hover:text-error hover:bg-error-container p-2 rounded-full transition-all">
-                            <span className="material-symbols-outlined">delete</span>
+                          }} className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-full transition-all">
+                            <Trash2 size={18} strokeWidth={1.5} />
                           </button>
                         </div>
                       </div>
@@ -784,6 +964,50 @@ export default function Admin() {
           )}
         </main>
       </div>
+
+      {productToDelete && (
+        <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-surface rounded-xl shadow-xl w-full max-w-sm p-6 text-center">
+            <AlertCircle size={32} strokeWidth={1.5} />
+            <h3 className="font-headline text-xl mb-2">Delete Product</h3>
+            <p className="text-on-surface-variant text-sm mb-6">Are you sure you want to delete this product? This action cannot be undone.</p>
+            <div className="flex justify-center gap-4">
+              <button onClick={() => setProductToDelete(null)} className="px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest text-outline border border-outline-variant/30 hover:bg-surface-container-low transition-colors">Cancel</button>
+              <button onClick={executeDelete} className="px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest bg-error text-white hover:bg-error/80 transition-colors">Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {restockProduct && (
+        <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-surface rounded-xl shadow-xl w-full max-w-sm p-6">
+            <h3 className="font-headline text-xl mb-4 text-center">Restock Sizes</h3>
+            <p className="text-on-surface-variant text-sm mb-6 text-center">Add quantities for {restockProduct.name}. Leave at 0 if no new stock.</p>
+            <div className="space-y-4 mb-6">
+              {['XS', 'S', 'M', 'L', 'XL'].map(size => (
+                <div key={size} className="flex justify-between items-center bg-surface-container-low p-2 rounded">
+                  <span className="font-bold text-sm">{size} <span className="text-[10px] text-outline font-normal">(Current: {restockProduct.inventory[size] || 0})</span></span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-outline font-bold uppercase">+</span>
+                    <input 
+                      type="number" 
+                      min="0"
+                      value={restockQuantities[size]}
+                      onChange={(e) => setRestockQuantities({...restockQuantities, [size]: e.target.value})}
+                      className="w-16 bg-surface border border-outline-variant/30 rounded p-1 text-center text-sm focus:outline-none focus:border-secondary"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-center gap-4">
+              <button onClick={() => setRestockProduct(null)} className="px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest text-outline border border-outline-variant/30 hover:bg-surface-container-low transition-colors">Cancel</button>
+              <button onClick={executeRestock} className="px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest bg-on-surface text-surface hover:bg-secondary transition-colors">Restock</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">

@@ -6,6 +6,10 @@ export const metadata = {
   description: "Redefining modern elegance through curation and craftsmanship.",
 };
 
+import { Providers } from "@/components/Providers";
+import CartDrawer from "@/components/CartDrawer";
+import ProductModal from "@/components/ProductModal";
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
@@ -16,9 +20,13 @@ export default function RootLayout({ children }) {
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
       </head>
       <body className="bg-background text-on-background font-body selection:bg-secondary-container selection:text-on-secondary-container antialiased">
-        <ToastProvider>
-          {children}
-        </ToastProvider>
+        <Providers>
+          <ToastProvider>
+            {children}
+            <CartDrawer />
+            <ProductModal />
+          </ToastProvider>
+        </Providers>
       </body>
     </html>
   );

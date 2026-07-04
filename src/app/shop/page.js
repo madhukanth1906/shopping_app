@@ -6,7 +6,12 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import { fetchProducts } from "@/lib/catalog";
+import { getUser } from "@/lib/auth";
+import { account } from "@/lib/appwrite";
 import Link from "next/link";
+import { ChevronRight, Filter, ChevronDown, ChevronUp, LayoutGrid, LayoutList, AlertCircle, Heart } from 'lucide-react';
+import { motion } from 'framer-motion';
+
 
 function ShopContent() {
   const searchParams = useSearchParams();
@@ -22,10 +27,12 @@ function ShopContent() {
   const [maxPrice, setMaxPrice] = useState(1500);
   const [sortOption, setSortOption] = useState("Newest Arrivals");
   const [isSortOpen, setIsSortOpen] = useState(false);
+  const [viewMode, setViewMode] = useState('grid');
   
   const [selectedOccasions, setSelectedOccasions] = useState([]);
   const [selectedColors, setSelectedColors] = useState([]);
   const [selectedFabrics, setSelectedFabrics] = useState([]);
+  const [preferredSize, setPreferredSize] = useState(null);
   const [selectedCategories, setSelectedCategories] = useState(categoryParam ? [categoryParam] : []);
 
   // For dynamic categories
@@ -36,6 +43,18 @@ function ShopContent() {
       try {
         setError(null);
         const allProducts = await fetchProducts();
+        try {
+          const user = await getUser();
+          if (user) {
+            const prefs = await account.getPrefs();
+            if (prefs && prefs.preferredSize) {
+              setPreferredSize(prefs.preferredSize);
+            }
+          }
+        } catch (e) {
+          console.error("Failed to load user prefs:", e);
+        }
+
         if (allProducts instanceof Error) {
             throw allProducts;
         }
@@ -83,6 +102,18 @@ function ShopContent() {
     return matchSize && matchPrice && matchOccasion && matchColor && matchFabric && matchCategory;
   });
 
+
+  // Move recommended to top
+  if (preferredSize) {
+    filteredProducts.sort((a, b) => {
+      const aHas = a.inventory && a.inventory[preferredSize] > 0;
+      const bHas = b.inventory && b.inventory[preferredSize] > 0;
+      if (aHas && !bHas) return -1;
+      if (!aHas && bHas) return 1;
+      return 0;
+    });
+  }
+
   if (filterParam === 'new') {
     filteredProducts.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
   } else if (sortOption === "Price: Low to High") {
@@ -100,15 +131,23 @@ function ShopContent() {
         {/* Breadcrumbs */}
         <nav className="flex items-center gap-2 mb-8 font-label text-[10px] uppercase tracking-[0.2em] text-outline">
           <Link className="hover:text-on-surface transition-colors" href="/">Home</Link>
-          <span className="material-symbols-outlined text-[12px]">chevron_right</span>
-          <Link className="hover:text-on-surface transition-colors" href="/shop">Shop</Link>
-          <span className="material-symbols-outlined text-[12px]">chevron_right</span>
-          <span className="text-on-surface">Collection</span>
+          <ChevronRight size={12} strokeWidth={1.5} />
+          {categoryParam ? (
+            <>
+              <Link className="hover:text-on-surface transition-colors" href="/shop">Shop</Link>
+              <ChevronRight size={12} strokeWidth={1.5} />
+              <span className="text-on-surface">{categoryParam}</span>
+            </>
+          ) : (
+            <span className="text-on-surface">Shop</span>
+          )}
         </nav>
 
         {/* Header Section */}
         <div className="mb-16">
-          <h1 className="font-headline text-5xl md:text-7xl italic text-on-surface mb-4">The <span className="font-normal not-italic">Collection</span></h1>
+          <h1 className="font-headline italic text-5xl md:text-7xl lg:text-[80px] leading-tight italic text-on-surface mb-4">
+            {categoryParam ? categoryParam : (<span>The <span className="font-normal not-italic">Shop</span></span>)}
+          </h1>
           <p className="font-body text-outline max-w-xl leading-relaxed">Curated silhouettes designed for the discerning minimalist. Each piece in our collection is a testament to timeless craftsmanship and ethereal movement.</p>
         </div>
 
@@ -116,7 +155,7 @@ function ShopContent() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12 border-b border-outline-variant/10 pb-6 relative">
           <div className="flex items-center gap-8">
             <button className="md:hidden flex items-center gap-2 font-label text-xs uppercase tracking-widest text-on-surface">
-              <span className="material-symbols-outlined">tune</span> Filters
+              <Filter size={16} strokeWidth={1.5} /> Filters
             </button>
             <div className="hidden md:flex items-center gap-4 text-xs font-label uppercase tracking-widest text-outline">
               <span>{filteredProducts.length} Products</span>
@@ -131,11 +170,11 @@ function ShopContent() {
                   onClick={() => setIsSortOpen(!isSortOpen)}
                   className="flex items-center gap-2 bg-transparent border-none font-label text-xs uppercase tracking-widest cursor-pointer text-on-surface hover:text-secondary transition-colors"
                 >
-                  {sortOption} <span className="material-symbols-outlined text-[16px]">{isSortOpen ? 'expand_less' : 'expand_more'}</span>
+                  {sortOption} {isSortOpen ? <ChevronUp size={16} strokeWidth={1.5} /> : <ChevronDown size={16} strokeWidth={1.5} />}
                 </button>
                 
                 {isSortOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-48 bg-surface-container-lowest border border-outline-variant/20 shadow-xl rounded z-50 py-2">
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-surface border border-outline-variant/20 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-outline-variant/20 shadow-xl rounded z-50 py-2">
                     {["Newest Arrivals", "Price: Low to High", "Price: High to Low", "Popularity"].map(opt => (
                       <button
                         key={opt}
@@ -150,8 +189,8 @@ function ShopContent() {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <button className="material-symbols-outlined text-outline hover:text-on-surface transition-colors">grid_view</button>
-              <button className="material-symbols-outlined text-on-surface">view_comfy</button>
+              <button onClick={() => setViewMode('grid')} className={`${viewMode === 'grid' ? 'text-on-surface' : 'text-outline hover:text-on-surface'} transition-colors`}><LayoutGrid size={20} strokeWidth={1.5} /></button>
+              <button onClick={() => setViewMode('list')} className={`${viewMode === 'list' ? 'text-on-surface' : 'text-outline hover:text-on-surface'} transition-colors`}><LayoutList size={20} strokeWidth={1.5} /></button>
             </div>
           </div>
         </div>
@@ -269,12 +308,12 @@ function ShopContent() {
 
           {/* Product Grid */}
           <div className="flex-grow z-0">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-16 gap-x-8">
+            <div className={viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-16 gap-x-8" : "flex flex-col gap-y-8"}>
               {loading && <p className="text-outline text-sm col-span-full">Loading products...</p>}
               
               {!loading && error && (
                 <div className="col-span-full bg-error-container/10 border border-error/30 p-6 rounded-lg flex items-start gap-4">
-                  <span className="material-symbols-outlined text-error">error</span>
+                  <AlertCircle size={24} className="text-error" strokeWidth={1.5} />
                   <div>
                     <h4 className="font-bold text-error text-sm uppercase tracking-wide">Database Connection Error</h4>
                     <p className="text-sm text-error/80">{error}</p>
@@ -284,12 +323,14 @@ function ShopContent() {
               
               {!loading && !error && filteredProducts.length === 0 && (
               <div className="col-span-full py-20 text-center">
-                <p className="font-label uppercase tracking-widest text-outline">No products found matching your criteria.</p>
+                <p className="font-label uppercase tracking-widest text-outline">
+                  {categoryParam ? "no product available on this category" : "No products found matching your criteria."}
+                </p>
               </div>
             )}
               
               {!loading && !error && filteredProducts.map(product => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard key={product.id} product={product} viewMode={viewMode} isRecommended={preferredSize && product.inventory && product.inventory[preferredSize] > 0} />
               ))}
             </div>
           </div>

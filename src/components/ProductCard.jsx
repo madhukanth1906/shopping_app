@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { useToast } from "./ToastProvider";
 import { useState, useEffect } from "react";
+import { Heart } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useAppContext } from './Providers';
 
-export default function ProductCard({ product }) {
+
+export default function ProductCard({ product, isRecommended, viewMode = "grid" }) {
   const { showToast } = useToast();
   const [isInWishlist, setIsInWishlist] = useState(false);
 
@@ -39,10 +43,17 @@ export default function ProductCard({ product }) {
 
   const totalInventory = product.inventory ? Object.values(product.inventory).reduce((sum, qty) => sum + qty, 0) : 0;
   
+  const { openProductModal } = useAppContext();
+
+  const handleCardClick = (e) => {
+    e.preventDefault();
+    openProductModal(product);
+  };
+  
   return (
-    <Link href={`/product/${product.id}`} className="block">
-      <div className="product-card group cursor-pointer relative">
-        <div className="relative aspect-[3/4] mb-6 overflow-hidden bg-surface-container-low rounded-lg">
+    <div onClick={handleCardClick} className="block w-full text-left">
+      <motion.div whileHover={{ y: -5 }} className={`product-card group cursor-pointer relative ${viewMode === "list" ? "flex flex-row gap-8 items-center bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10" : ""}`}>
+        <div className={`relative overflow-hidden bg-surface-container-low rounded-lg ${viewMode === "list" ? "w-48 h-64 flex-shrink-0 mb-0" : "aspect-[3/4] mb-6"}`}>
           <img src={imgUrl} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
           
           {/* Stock Badges */}
@@ -57,19 +68,24 @@ export default function ProductCard({ product }) {
           ) : null}
 
           <button onClick={handleWishlist} className={`group/wishlist absolute top-4 right-4 p-2 backdrop-blur-sm rounded-full transition-all duration-300 hover:scale-110 active:scale-95 shadow-sm z-10 ${isInWishlist ? 'bg-surface text-error' : 'bg-surface/80 text-on-surface hover:text-error hover:bg-surface'}`}>
-            <span className="material-symbols-outlined text-sm transition-all duration-300 group-hover/wishlist:[font-variation-settings:'FILL'_1]" style={{ fontVariationSettings: `'FILL' ${isInWishlist ? 1 : 0}` }}>favorite</span>
+            <Heart size={18} strokeWidth={1.5} className={isInWishlist ? "fill-current" : ""} />
           </button>
-          <div className="quick-shop-overlay absolute inset-0 flex items-end p-6 bg-gradient-to-t from-surface/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-            <button className="w-full py-4 bg-on-surface text-surface font-label text-[10px] uppercase tracking-widest rounded-full hover:bg-secondary transition-colors pointer-events-none">View Details</button>
+          <div className="quick-shop-overlay absolute inset-0 flex items-end p-6 bg-gradient-to-t from-surface/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            <button className="w-full py-4 bg-on-surface text-surface font-label text-[10px] uppercase tracking-widest rounded-full hover:bg-secondary transition-colors pointer-events-auto">Quick View</button>
           </div>
         </div>
-        <div className="space-y-1">
+        <div className={`space-y-2 flex-1`}>
           <div className="flex justify-between items-baseline">
             <h3 className="font-headline text-lg italic text-on-surface">{product.name}</h3>
             <span className="font-headline text-sm">{product.price}</span>
           </div>
+          {viewMode === 'list' && (
+            <p className="text-outline text-sm mt-4 leading-relaxed line-clamp-3">
+              {product.description || "A curated silhouette designed for the discerning minimalist. Enjoy timeless craftsmanship."}
+            </p>
+          )}
         </div>
-      </div>
-    </Link>
+      </motion.div>
+    </div>
   );
 }

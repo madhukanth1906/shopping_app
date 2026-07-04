@@ -163,8 +163,21 @@ export async function saveReview(reviewData) {
                 }
             );
         }
-    } catch (error) {
+} catch (error) {
         console.error("Error saving review:", error);
+        throw error;
+    }
+}
+
+export async function deleteReview(reviewId) {
+    try {
+        return await databases.deleteDocument(
+            DATABASE_ID,
+            REVIEWS_COLLECTION_ID,
+            reviewId
+        );
+    } catch (error) {
+        console.error("Error deleting review:", error);
         throw error;
     }
 }
@@ -220,13 +233,13 @@ export async function fetchUserOrders(userId) {
     }
 }
 
-export async function updateOrderStatus(orderId, status) {
+export async function updateOrderStatus(orderId, status, updatedShippingAddress = null) {
     try {
         return await databases.updateDocument(
             DATABASE_ID,
             ORDERS_COLLECTION_ID,
             orderId,
-            { status }
+            updatedShippingAddress ? { status, shippingAddress: updatedShippingAddress } : { status }
         );
     } catch (error) {
         console.error("Error updating order status:", error);
