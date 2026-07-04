@@ -294,8 +294,70 @@ export default function Account() {
   }
 
   const renderOrderTable = (orderList) => (
-    <div className="bg-surface rounded-2xl overflow-hidden border border-outline-variant/10 shadow-sm">
-      <div className="overflow-x-auto no-scrollbar">
+    <div className="bg-surface md:rounded-2xl overflow-hidden md:border border-outline-variant/10 md:shadow-sm">
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-4">
+        {orderList.length === 0 ? (
+          <p className="py-8 text-sm text-center text-outline">No orders found.</p>
+        ) : (
+          orderList.map(order => {
+            const date = new Date(order.$createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            let statusColor = 'bg-surface-container-high text-on-surface-variant';
+            if (order.status === 'Shipped') statusColor = 'bg-secondary/10 text-secondary border border-secondary/20';
+            if (order.status === 'Cancelled') statusColor = 'bg-error/10 text-error border border-error/20';
+            
+            return (
+              <div key={order.$id} className="border border-outline-variant/20 rounded-xl p-5 bg-surface-container-lowest">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <p className="font-['Noto_Serif'] font-bold text-lg uppercase tracking-tighter">#{order.$id.slice(-6)}</p>
+                    <p className="text-xs text-on-surface-variant mt-1">{date}</p>
+                  </div>
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${statusColor}`}>{order.status}</span>
+                </div>
+                
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-xs text-outline uppercase tracking-widest font-bold">Total</span>
+                  <span className="font-semibold text-lg">₹{order.total.toFixed(2)}</span>
+                </div>
+                
+                <div className="flex gap-4 border-t border-outline-variant/10 pt-4">
+                  {(order.status === 'Pending' || order.status === 'Processing') && (
+                    <button 
+                      onClick={() => { setOrderToCancel(order); setIsCancelModalOpen(true); }}
+                      className="text-[10px] flex-1 py-2 text-center border border-error/20 rounded font-bold uppercase tracking-widest text-error hover:bg-error/5 transition-colors"
+                    >
+                      Cancel Order
+                    </button>
+                  )}
+                  {(order.status === 'Shipped' || order.status === 'Processing' || order.status === 'Delivered') && (
+                    <button 
+                      onClick={() => setSelectedTrackingOrder(order)}
+                      className="text-[10px] flex-1 py-2 text-center bg-on-surface text-surface rounded font-bold uppercase tracking-widest hover:bg-secondary transition-colors"
+                    >
+                      Track Shipment
+                    </button>
+                  )}
+                </div>
+                
+                {(order.status === 'Cancelled' || order.status === 'Refund Requested') && (() => {
+                  const addr = JSON.parse(order.shippingAddress || '{}');
+                  if (addr.adminCancelReason) {
+                    return <p className="text-[10px] text-error mt-4 italic leading-relaxed font-bold">Admin Note: {addr.adminCancelReason}</p>;
+                  }
+                  if (addr.cancelReason) {
+                    return <p className="text-[10px] text-on-surface-variant mt-4 italic leading-relaxed">Your Reason: {addr.cancelReason}</p>;
+                  }
+                  return null;
+                })()}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block overflow-x-auto no-scrollbar">
         <table className="w-full text-left">
           <thead>
             <tr className="text-[10px] uppercase tracking-widest text-outline bg-surface-container-lowest border-b border-outline-variant/10">
