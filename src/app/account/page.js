@@ -694,7 +694,7 @@ export default function Account() {
             </section>
           </div>
         )}
-      \n        {/* Shipment Tracking Modal */}
+        {/* Shipment Tracking Modal */}
         <AnimatePresence>
           {selectedTrackingOrder && (
             <motion.div 
