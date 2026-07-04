@@ -29,8 +29,17 @@ export default function Checkout() {
     address: "",
     city: "",
     postalCode: "",
+    mobileNumber: "",
     paymentMethod: "Cash on Delivery"
   });
+
+  // Mobile Verification State
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [otpInput, setOtpInput] = useState("");
+  const [otpHash, setOtpHash] = useState("");
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   
   // Saved Addresses State
   const [savedAddresses, setSavedAddresses] = useState([]);
@@ -93,10 +102,67 @@ export default function Checkout() {
 
   const finalTotal = Math.max(0, subtotal - discountAmount);
 
+  const handleSendOtp = async () => {
+    if (!shipping.mobileNumber) {
+      showToast("Please enter a mobile number first.", "error");
+      return;
+    }
+    setIsSendingOtp(true);
+    try {
+      const res = await fetch('/api/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobileNumber: shipping.mobileNumber })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOtpHash(data.hash);
+        setIsOtpSent(true);
+        showToast("OTP sent via WhatsApp!", "success");
+      } else {
+        showToast(data.error || "Failed to send OTP", "error");
+      }
+    } catch (e) {
+      showToast("Error sending OTP", "error");
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otpInput) {
+      showToast("Please enter the OTP.", "error");
+      return;
+    }
+    setIsVerifyingOtp(true);
+    try {
+      const res = await fetch('/api/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobileNumber: shipping.mobileNumber, otp: otpInput, hash: otpHash })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setIsPhoneVerified(true);
+        showToast("Phone number verified successfully!", "success");
+      } else {
+        showToast(data.error || "Invalid OTP", "error");
+      }
+    } catch (e) {
+      showToast("Error verifying OTP", "error");
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
   const handleNextStep = () => {
     if (currentStep === 1) {
-      if (!shipping.fullName || !shipping.address || !shipping.city) {
+      if (!shipping.fullName || !shipping.address || !shipping.city || !shipping.mobileNumber) {
         showToast("Please fill out all address fields.", "error");
+        return;
+      }
+      if (!isPhoneVerified) {
+        showToast("Please verify your mobile number first.", "error");
         return;
       }
     }
@@ -223,6 +289,58 @@ export default function Checkout() {
                         <label className="text-[10px] uppercase tracking-widest font-bold mb-2 block">Postal Code</label>
                         <input value={shipping.postalCode} onChange={e => setShipping({...shipping, postalCode: e.target.value})} className="w-full bg-surface border border-outline-variant/30 rounded-lg px-4 py-3 text-sm focus:border-on-surface focus:ring-1 focus:ring-on-surface outline-none transition-all" type="text" />
                       </div>
+                    </div>
+
+                    <div className="border-t border-outline-variant/20 pt-6 mt-6">
+                      <label className="text-[10px] uppercase tracking-widest font-bold mb-2 block">Mobile Number (For WhatsApp Verification)</label>
+                      <div className="flex gap-4">
+                        <input 
+                          value={shipping.mobileNumber} 
+                          onChange={e => setShipping({...shipping, mobileNumber: e.target.value})} 
+                          placeholder="+1234567890"
+                          disabled={isPhoneVerified || isOtpSent}
+                          className="flex-1 bg-surface border border-outline-variant/30 rounded-lg px-4 py-3 text-sm focus:border-on-surface focus:ring-1 focus:ring-on-surface outline-none transition-all disabled:opacity-50" 
+                          type="text" 
+                        />
+                        {!isPhoneVerified && !isOtpSent && (
+                          <button 
+                            onClick={handleSendOtp}
+                            disabled={isSendingOtp || !shipping.mobileNumber}
+                            className="bg-on-surface text-surface px-6 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-secondary transition-all disabled:opacity-50 whitespace-nowrap"
+                          >
+                            {isSendingOtp ? 'Sending...' : 'Verify'}
+                          </button>
+                        )}
+                        {isPhoneVerified && (
+                          <div className="flex items-center gap-2 text-success px-4 font-bold text-sm bg-success/10 rounded-lg">
+                            <CheckCircle size={18} /> Verified
+                          </div>
+                        )}
+                      </div>
+                      
+                      {isOtpSent && !isPhoneVerified && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-4 p-4 border border-secondary/30 bg-secondary/5 rounded-lg">
+                          <label className="text-[10px] uppercase tracking-widest font-bold mb-2 block text-secondary">Enter WhatsApp OTP</label>
+                          <div className="flex gap-4">
+                            <input 
+                              value={otpInput} 
+                              onChange={e => setOtpInput(e.target.value)} 
+                              placeholder="6-digit code"
+                              maxLength={6}
+                              className="flex-1 bg-surface border border-outline-variant/30 rounded-lg px-4 py-3 text-sm focus:border-secondary focus:ring-1 focus:ring-secondary outline-none transition-all text-center tracking-[0.5em] font-bold" 
+                              type="text" 
+                            />
+                            <button 
+                              onClick={handleVerifyOtp}
+                              disabled={isVerifyingOtp || otpInput.length < 5}
+                              className="bg-secondary text-on-secondary px-6 rounded-lg text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-all disabled:opacity-50"
+                            >
+                              {isVerifyingOtp ? 'Verifying...' : 'Confirm'}
+                            </button>
+                          </div>
+                          <button onClick={() => setIsOtpSent(false)} className="text-[10px] mt-3 underline text-on-surface-variant hover:text-on-surface">Change Number or Resend</button>
+                        </motion.div>
+                      )}
                     </div>
                   </div>
                 </motion.div>
