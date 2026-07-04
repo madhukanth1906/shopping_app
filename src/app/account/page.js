@@ -44,6 +44,51 @@ export default function Account() {
 
   const [newAddress, setNewAddress] = useState({ fullName: '', address: '', city: '', postalCode: '' });
   const [isAddingAddress, setIsAddingAddress] = useState(false);
+  const [isFetchingLocation, setIsFetchingLocation] = useState(false);
+
+  const fetchLocation = () => {
+    if (!navigator.geolocation) {
+      showToast("Geolocation is not supported by your browser.", "error");
+      return;
+    }
+    
+    setIsFetchingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
+          const data = await res.json();
+          
+          if (data && data.address) {
+            const city = data.address.city || data.address.town || data.address.village || "";
+            const postalCode = data.address.postcode || "";
+            const street = data.address.road || "";
+            const house = data.address.house_number ? data.address.house_number + ", " : "";
+            const fullAddress = house + street + (data.address.suburb ? ", " + data.address.suburb : "");
+            
+            setNewAddress(prev => ({
+              ...prev,
+              address: fullAddress || data.display_name,
+              city: city,
+              postalCode: postalCode
+            }));
+            showToast("Location fetched successfully!", "success");
+          } else {
+            showToast("Could not determine address from location.", "error");
+          }
+        } catch (error) {
+          showToast("Failed to fetch address details.", "error");
+        } finally {
+          setIsFetchingLocation(false);
+        }
+      },
+      (error) => {
+        setIsFetchingLocation(false);
+        showToast("Location permission denied or unavailable.", "error");
+      }
+    );
+  };
 
   // Cancellation State
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
@@ -645,7 +690,18 @@ export default function Account() {
                     <AnimatePresence mode="wait">
                       {isAddingAddress && (
                         <motion.form initial={{opacity:0, height:0}} animate={{opacity:1, height:'auto'}} exit={{opacity:0, height:0}} onSubmit={handleSaveAddress} className="bg-surface border border-outline-variant/10 shadow-md p-8 rounded-2xl space-y-6 overflow-hidden">
-                          <h4 className="font-headline text-xl text-on-surface">New Shipping Address</h4>
+                          <div className="flex justify-between items-center">
+                            <h4 className="font-headline text-xl text-on-surface">New Shipping Address</h4>
+                            <button 
+                              type="button"
+                              onClick={fetchLocation}
+                              disabled={isFetchingLocation}
+                              className="flex items-center gap-2 text-xs text-on-surface bg-surface border border-outline-variant/20 shadow-sm px-4 py-2 rounded-full font-bold uppercase tracking-widest hover:border-on-surface hover:shadow-md transition-all disabled:opacity-50"
+                            >
+                              <MapPin size={14} strokeWidth={2} />
+                              {isFetchingLocation ? 'Locating...' : 'Use My Location'}
+                            </button>
+                          </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <input required placeholder="Full Name (e.g. Jane Doe)" value={newAddress.fullName} onChange={(e) => setNewAddress({...newAddress, fullName: e.target.value})} className="w-full bg-surface-container/50 border border-outline-variant/30 rounded-lg px-5 py-4 text-sm focus:outline-none focus:border-on-surface transition-colors" />
                             <input required placeholder="City / State" value={newAddress.city} onChange={(e) => setNewAddress({...newAddress, city: e.target.value})} className="w-full bg-surface-container/50 border border-outline-variant/30 rounded-lg px-5 py-4 text-sm focus:outline-none focus:border-on-surface transition-colors" />
