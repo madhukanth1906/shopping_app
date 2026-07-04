@@ -118,7 +118,7 @@ export default function Checkout() {
       if (data.success) {
         setOtpHash(data.hash);
         setIsOtpSent(true);
-        showToast("OTP sent via WhatsApp!", "success");
+        showToast("OTP sent via SMS!", "success");
       } else {
         showToast(data.error || "Failed to send OTP", "error");
       }
@@ -292,12 +292,12 @@ export default function Checkout() {
                     </div>
 
                     <div className="border-t border-outline-variant/20 pt-6 mt-6">
-                      <label className="text-[10px] uppercase tracking-widest font-bold mb-2 block">Mobile Number (For WhatsApp Verification)</label>
+                      <label className="text-[10px] uppercase tracking-widest font-bold mb-2 block">Mobile Number (For SMS Verification)</label>
                       <div className="flex gap-4">
                         <input 
                           value={shipping.mobileNumber} 
                           onChange={e => setShipping({...shipping, mobileNumber: e.target.value})} 
-                          placeholder="+1234567890"
+                          placeholder="+919999999999"
                           disabled={isPhoneVerified || isOtpSent}
                           className="flex-1 bg-surface border border-outline-variant/30 rounded-lg px-4 py-3 text-sm focus:border-on-surface focus:ring-1 focus:ring-on-surface outline-none transition-all disabled:opacity-50" 
                           type="text" 
@@ -318,9 +318,11 @@ export default function Checkout() {
                         )}
                       </div>
                       
+                      {/* Firebase Recaptcha Container Removed */}
+                      
                       {isOtpSent && !isPhoneVerified && (
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-4 p-4 border border-secondary/30 bg-secondary/5 rounded-lg">
-                          <label className="text-[10px] uppercase tracking-widest font-bold mb-2 block text-secondary">Enter WhatsApp OTP</label>
+                          <label className="text-[10px] uppercase tracking-widest font-bold mb-2 block text-secondary">Enter SMS OTP</label>
                           <div className="flex gap-4">
                             <input 
                               value={otpInput} 
