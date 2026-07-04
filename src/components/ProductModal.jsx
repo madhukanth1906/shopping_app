@@ -10,17 +10,50 @@ export default function ProductModal() {
   const [selectedSize, setSelectedSize] = useState(null);
   const [activeTab, setActiveTab] = useState('details');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isInWishlist, setIsInWishlist] = useState(false);
   const { showToast } = useToast();
+
+  const checkWishlist = () => {
+    if (!selectedProduct) return;
+    const wishlist = JSON.parse(localStorage.getItem('atelier_wishlist') || '[]');
+    setIsInWishlist(!!wishlist.find(item => item.id === selectedProduct.$id || item.id === selectedProduct.id));
+  };
 
   useEffect(() => {
     if (isProductModalOpen && selectedProduct) {
       setSelectedSize(null);
       setCurrentImageIndex(0);
       setActiveTab('details');
+      checkWishlist();
     }
   }, [isProductModalOpen, selectedProduct]);
 
+  useEffect(() => {
+    window.addEventListener('wishlistUpdated', checkWishlist);
+    return () => window.removeEventListener('wishlistUpdated', checkWishlist);
+  }, [selectedProduct]);
+
   if (!selectedProduct) return null;
+
+  const handleWishlist = (e) => {
+    e.stopPropagation();
+    let wishlist = JSON.parse(localStorage.getItem('atelier_wishlist') || '[]');
+    const productId = selectedProduct.$id || selectedProduct.id;
+    const exists = wishlist.find(item => item.id === productId);
+    
+    if (!exists) {
+      const imgUrl = Array.isArray(selectedProduct.images) ? selectedProduct.images[0] : selectedProduct.image;
+      wishlist.push({ id: productId, name: selectedProduct.name, price: selectedProduct.price, image: imgUrl });
+      localStorage.setItem('atelier_wishlist', JSON.stringify(wishlist));
+      window.dispatchEvent(new Event('wishlistUpdated'));
+      showToast(`${selectedProduct.name} added to wishlist!`, "success");
+    } else {
+      wishlist = wishlist.filter(item => item.id !== productId);
+      localStorage.setItem('atelier_wishlist', JSON.stringify(wishlist));
+      window.dispatchEvent(new Event('wishlistUpdated'));
+      showToast(`${selectedProduct.name} removed from wishlist.`, "success");
+    }
+  };
 
   const images = Array.isArray(selectedProduct.images) && selectedProduct.images.length > 0 
     ? selectedProduct.images 
@@ -261,9 +294,10 @@ export default function ProductModal() {
                   ADD TO SHOPPING BAG
                 </button>
                 <button 
-                  className="w-14 h-auto flex items-center justify-center border border-outline-variant/20 rounded hover:border-on-surface transition-all group"
+                  onClick={handleWishlist}
+                  className={`w-14 h-auto flex items-center justify-center border rounded transition-all group ${isInWishlist ? 'border-error bg-error/5 text-error' : 'border-outline-variant/20 hover:border-on-surface text-outline'}`}
                 >
-                  <Heart size={18} strokeWidth={1.5} className="text-outline group-hover:text-error transition-colors" />
+                  <Heart size={18} strokeWidth={1.5} className={`${isInWishlist ? 'fill-current text-error' : 'group-hover:text-error transition-colors'}`} />
                 </button>
               </div>
 
