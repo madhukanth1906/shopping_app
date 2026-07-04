@@ -608,7 +608,7 @@ export default function Admin() {
                 </button>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+                <table className="w-full text-left border-collapse min-w-[1000px]">
                   <thead>
                     <tr className="bg-surface-container-low/20 text-[10px] uppercase tracking-[0.15em] text-outline font-bold">
                       <th className="px-8 py-4">Image</th>
