@@ -2,6 +2,9 @@ import { account } from './appwrite';
 import { OAuthProvider } from 'appwrite';
 
 export const loginWithGoogle = () => {
+    if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('cookieFallback');
+    }
     // Fallback to createOAuth2Session if createOAuth2Token is not available in this SDK version
     const method = account.createOAuth2Token || account.createOAuth2Session;
     method.call(
@@ -17,6 +20,10 @@ export const logout = async () => {
         await account.deleteSession('current');
     } catch (e) {
         console.error(e);
+    } finally {
+        if (typeof localStorage !== 'undefined') {
+            localStorage.removeItem('cookieFallback');
+        }
     }
 };
 
