@@ -44,6 +44,9 @@ export default function Admin() {
   const [orderDateFilter, setOrderDateFilter] = useState("");
   const [selectedDossierOrder, setSelectedDossierOrder] = useState(null);
   const [trackingNumber, setTrackingNumber] = useState("");
+  const [isAdminCancelModalOpen, setIsAdminCancelModalOpen] = useState(false);
+  const [adminCancelReason, setAdminCancelReason] = useState('');
+  const [adminOrderToCancel, setAdminOrderToCancel] = useState(null);
 
 
   // Form State
@@ -239,6 +242,26 @@ export default function Admin() {
       showToast(`Order status updated to ${status}.`, "success");
     } catch (err) {
       showToast("Failed to update order status.", "error");
+    }
+  };
+
+  const handleAdminCancelOrder = async (e) => {
+    e.preventDefault();
+    if (!adminCancelReason || !adminOrderToCancel) return;
+    try {
+      const shippingAddress = JSON.parse(adminOrderToCancel.shippingAddress || '{}');
+      const updatedShipping = JSON.stringify({
+        ...shippingAddress,
+        adminCancelReason: adminCancelReason
+      });
+      await updateOrderStatus(adminOrderToCancel.$id, 'Cancelled', updatedShipping);
+      showToast('Order successfully cancelled.', 'success');
+      setAdminCancelReason('');
+      setAdminOrderToCancel(null);
+      setIsAdminCancelModalOpen(false);
+      loadData();
+    } catch (err) {
+      showToast('Failed to cancel order.', 'error');
     }
   };
 
@@ -708,11 +731,18 @@ export default function Admin() {
                                     <Eye size={16} strokeWidth={1.5} />
                                   </button>
                                   {isProcessing ? (
-                                    <button onClick={() => { setSelectedDossierOrder(order); setTrackingNumber(""); }} className="bg-[#7e572e] text-surface px-4 py-2 rounded flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:bg-[#5c3e1e] transition-colors">
-                                      <Truck size={14} /> Ship / Dispatch
-                                    </button>
+                                    <>
+                                      <button onClick={() => { setAdminOrderToCancel(order); setIsAdminCancelModalOpen(true); }} className="bg-surface-container text-error px-4 py-2 rounded flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:bg-error/10 transition-colors">
+                                        <X size={14} /> Cancel
+                                      </button>
+                                      <button onClick={() => { setSelectedDossierOrder(order); setTrackingNumber(""); }} className="bg-[#7e572e] text-surface px-4 py-2 rounded flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:bg-[#5c3e1e] transition-colors">
+                                        <Truck size={14} /> Ship
+                                      </button>
+                                    </>
                                   ) : (
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-secondary flex items-center gap-1"><Check size={14} /> Dispatched</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-secondary flex items-center gap-1">
+                                      {order.status === 'Cancelled' ? <><X size={14} className="text-error" /> <span className="text-error">Cancelled</span></> : <><Check size={14} /> {order.status}</>}
+                                    </span>
                                   )}
                                 </div>
                               </td>
@@ -1200,6 +1230,37 @@ export default function Admin() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* Admin Cancel Order Modal */}
+      {isAdminCancelModalOpen && adminOrderToCancel && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-surface w-full max-w-md rounded-2xl shadow-xl overflow-hidden"
+          >
+            <div className="p-6 border-b border-outline-variant/10 flex justify-between items-center">
+              <h3 className="font-headline text-xl text-on-surface">Cancel Order</h3>
+              <button onClick={() => { setIsAdminCancelModalOpen(false); setAdminOrderToCancel(null); setAdminCancelReason(''); }} className="p-2 hover:bg-surface-container rounded-full transition-colors"><X size={20} strokeWidth={1.5} /></button>
+            </div>
+            <form onSubmit={handleAdminCancelOrder} className="p-6 space-y-6">
+              <p className="text-sm text-on-surface-variant font-body">
+                Please provide a reason for cancelling order <strong className="text-on-surface">#{adminOrderToCancel.$id.slice(-6)}</strong>. This reason will be visible to the customer.
+              </p>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-widest text-on-surface mb-2">Cancellation Reason *</label>
+                <textarea required value={adminCancelReason} onChange={(e) => setAdminCancelReason(e.target.value)} rows={3} placeholder="e.g. Out of stock, pricing error..." className="w-full bg-surface-container-low border-none rounded p-4 text-sm focus:ring-1 focus:ring-secondary outline-none transition-all"></textarea>
+              </div>
+              <div className="pt-2 flex justify-end gap-4">
+                <button type="button" onClick={() => { setIsAdminCancelModalOpen(false); setAdminOrderToCancel(null); setAdminCancelReason(''); }} className="px-6 py-3 rounded-full text-xs font-bold uppercase tracking-widest text-outline hover:text-on-surface transition-colors">Keep Order</button>
+                <button type="submit" className="bg-error text-surface px-6 py-3 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-error/90 transition-all shadow-sm">
+                  Confirm Cancel
+                </button>
+              </div>
+            </form>
+          </motion.div>
         </div>
       )}
     </div>

@@ -281,6 +281,16 @@ export default function Account() {
                       <td className="px-6 py-6 text-on-surface-variant">{date}</td>
                       <td className="px-6 py-6">
                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${statusColor}`}>{order.status}</span>
+                        {(order.status === 'Cancelled' || order.status === 'Refund Requested') && (() => {
+                          const addr = JSON.parse(order.shippingAddress || '{}');
+                          if (addr.adminCancelReason) {
+                            return <p className="text-[10px] text-error mt-2 italic max-w-xs leading-relaxed font-bold">Admin Note: {addr.adminCancelReason}</p>;
+                          }
+                          if (addr.cancelReason) {
+                            return <p className="text-[10px] text-on-surface-variant mt-2 italic max-w-xs leading-relaxed">Your Reason: {addr.cancelReason}</p>;
+                          }
+                          return null;
+                        })()}
                       </td>
                       <td className="px-6 py-6 text-right font-semibold">₹{order.total.toFixed(2)}</td>
                       <td className="px-6 py-6 text-right">
