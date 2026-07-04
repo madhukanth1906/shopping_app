@@ -122,7 +122,7 @@ export default function CartDrawer() {
                 <div className="space-y-3 mb-6 font-body text-sm text-on-surface-variant">
                   <div className="flex justify-between">
                     <span>Subtotal</span>
-                    <span className="text-on-surface font-semibold">$${subtotal.toFixed(2)}</span>
+                    <span className="text-on-surface font-semibold">₹{subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-outline">
                     <span>Shipping</span>

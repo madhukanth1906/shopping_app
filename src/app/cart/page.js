@@ -108,8 +108,16 @@ export default function Checkout() {
     setIsSubmitting(true);
     try {
       const user = await getUser();
+      if (!user) {
+        showToast("Please sign in to place an order.", "error");
+        setTimeout(() => {
+          window.location.href = '/account';
+        }, 1500);
+        return;
+      }
+      
       const orderPayload = {
-        userId: user ? user.$id : 'guest',
+        userId: user.$id,
         items: JSON.stringify(cartItems),
         total: finalTotal,
         status: 'Pending',

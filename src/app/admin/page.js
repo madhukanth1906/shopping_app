@@ -10,7 +10,7 @@ import Link from "next/link";
 import { 
   LayoutDashboard, Package, ShoppingCart, MessageSquare, Settings, 
   Ticket, LogOut, TrendingUp, Users, DollarSign, Plus, Edit2, 
-  Trash2, X, Search, CheckCircle, Truck, Eye, Check, AlertCircle, RefreshCcw, Menu, Bell, Star
+  Trash2, X, Search, CheckCircle, Truck, Eye, Check, AlertCircle, RefreshCcw, Menu, Bell, Star, UserCircle, MapPin
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -761,7 +761,7 @@ export default function Admin() {
                                         <p className="font-bold text-sm text-on-surface">{item.name}</p>
                                         <p className="text-xs text-outline mt-1 uppercase font-label">Size: {item.size} | Qty: {item.quantity || 1}</p>
                                       </div>
-                                      <p className="font-headline font-bold text-sm">₹{(parseInt(item.price.replace(/[^0-9]/g, '')) * (item.quantity || 1)).toLocaleString('en-IN')}</p>
+                                      <p className="font-headline font-bold text-sm">₹{(parseFloat(String(item.price).replace(/[^0-9.]/g, '')) * (item.quantity || 1)).toLocaleString('en-IN')}</p>
                                     </div>
                                   ))}
                                 </div>

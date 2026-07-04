@@ -24,6 +24,8 @@
   --color-surface-container-lowest: #ffffff;
   --color-on-secondary-container: #1A1A1A;
   --color-primary-container: #E8E6E1;
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
 
   --font-headline: "Noto Serif", serif;
   --font-body: "Manrope", sans-serif;
