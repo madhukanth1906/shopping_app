@@ -32,6 +32,7 @@ export default function Admin() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
+  const [couponType, setCouponType] = useState('fixed');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
   const [restockProduct, setRestockProduct] = useState(null);
@@ -65,7 +66,8 @@ export default function Admin() {
           router.push('/account');
           return;
         }
-        if (user.email !== 'madhu9940984501@gmail.com') {
+        const allowedAdmins = ['madhu9940984501@gmail.com', 'dharanimpdm2910@gmail.com'];
+        if (!allowedAdmins.includes(user.email)) {
           showToast('Access Denied: You do not have administrator privileges.', 'error');
           router.push('/');
           return;
@@ -128,11 +130,24 @@ export default function Admin() {
       const name = formData.get('name');
       let price = formData.get('price');
       const occasion = formData.get('occasion');
-      const color = formData.get('color');
       const fabric = formData.get('fabric');
       const desc = formData.get('desc');
 
-      const files = Array.from(formData.getAll('images')).filter(f => f.size > 0);
+      const totalInventory = Object.values(inventory).reduce((acc, val) => acc + parseInt(val || 0), 0);
+      if (totalInventory === 0) {
+        showToast("Stocks are still zero. Please add inventory to at least one size.", "error");
+        setIsSubmitting(false);
+        return;
+      }
+
+      const files = [];
+      ['image1', 'image2', 'image3'].forEach(key => {
+        const file = formData.get(key);
+        if (file && file.size > 0) {
+          files.push(file);
+        }
+      });
+      
       if (files.length === 0) {
         showToast("Please select at least 1 image.", "error");
         setIsSubmitting(false);
@@ -172,7 +187,6 @@ export default function Admin() {
         category: category || formData.get('category') || 'Fashion Dress',
         inventory,
         occasion,
-        color,
         fabric
       };
 
@@ -928,7 +942,7 @@ export default function Admin() {
               <div className="px-8 py-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-outline-variant/10">
                 <h3 className="font-headline text-xl">Coupons</h3>
                 <button
-                  onClick={() => setIsCouponModalOpen(true)}
+                  onClick={() => { setIsCouponModalOpen(true); setCouponType('fixed'); }}
                   className="bg-on-surface text-surface px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-secondary transition-all"
                 >
                   Create Coupon
@@ -944,7 +958,11 @@ export default function Admin() {
                       <div key={coupon.$id} className="border border-outline-variant/20 rounded-lg p-6 bg-surface-container-low/30 flex justify-between items-center">
                         <div>
                           <p className="text-lg font-bold uppercase tracking-widest text-on-surface mb-1">{coupon.code}</p>
-                          <p className="text-sm text-on-surface-variant">Discount: ₹{coupon.discountAmount} | Min Price: ₹{coupon.minPrice}</p>
+                          <p className="text-sm text-on-surface-variant">
+                            {coupon.type === 'percentage' 
+                              ? `Discount: ${coupon.discountAmount}% (Max ₹${coupon.maxDiscount}) | Min Price: ₹${coupon.minPrice}`
+                              : `Discount: ₹${coupon.discountAmount} | Min Price: ₹${coupon.minPrice}`}
+                          </p>
                           <p className="text-xs text-outline mt-1">Expires: {new Date(coupon.expiryDate).toLocaleDateString()}</p>
                         </div>
                         <div className="flex items-center gap-4">
@@ -1093,6 +1111,12 @@ export default function Admin() {
                   className="w-full bg-surface-container-low border-none rounded p-3 text-sm focus:ring-1 focus:ring-secondary outline-none"
                 />
                 <datalist id="category-options">
+                  <option value="Party Wear" />
+                  <option value="Casual" />
+                  <option value="Traditional" />
+                  <option value="Office Wear" />
+                  <option value="Summer Collection" />
+                  <option value="Saree" />
                   {Array.from(new Set(Object.values(products).map(p => p.category).filter(Boolean))).map(cat => (
                     <option key={cat} value={cat} />
                   ))}
@@ -1116,7 +1140,7 @@ export default function Admin() {
                 <textarea name="desc" required rows="3" className="w-full bg-surface-container-low border-none rounded p-3 text-sm focus:ring-1 focus:ring-secondary outline-none"></textarea>
               </div>
 
-              <div className="grid grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-widest text-on-surface mb-2">Occasion</label>
                   <select name="occasion" className="w-full bg-surface-container-low border-none rounded p-3 text-sm focus:ring-1 focus:ring-secondary outline-none">
@@ -1124,17 +1148,6 @@ export default function Admin() {
                     <option value="Garden Party">Garden Party</option>
                     <option value="Bridal Guest">Bridal Guest</option>
                     <option value="Summer Soirée">Summer Soirée</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-widest text-on-surface mb-2">Color</label>
-                  <select name="color" className="w-full bg-surface-container-low border-none rounded p-3 text-sm focus:ring-1 focus:ring-secondary outline-none">
-                    <option value="">Any</option>
-                    <option value="Cream">Cream</option>
-                    <option value="Blush">Blush</option>
-                    <option value="Terra">Terra</option>
-                    <option value="Soft Black">Soft Black</option>
-                    <option value="Pure White">Pure White</option>
                   </select>
                 </div>
                 <div>
@@ -1147,21 +1160,40 @@ export default function Admin() {
                 </div>
               </div>
 
+              {category === 'Saree' ? (
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-on-surface mb-3">Total Quantity *</label>
+                  <input type="number" min="0" value={inventory['One Size'] || 0} onChange={(e) => setInventory({ 'One Size': parseInt(e.target.value) || 0 })} className="w-full bg-surface-container-low border-none rounded p-3 text-sm focus:ring-1 focus:ring-secondary outline-none" />
+                </div>
+              ) : (
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-widest text-on-surface mb-3">Size Inventory *</label>
                   <div className="grid grid-cols-5 gap-4">
                     {['XS', 'S', 'M', 'L', 'XL'].map(size => (
                       <div key={size}>
                         <label className="block text-[10px] text-center font-bold mb-1">{size}</label>
-                        <input type="number" min="0" value={inventory[size]} onChange={(e) => handleInventoryChange(size, e.target.value)} className="w-full bg-surface-container-low border-none rounded p-2 text-center text-sm outline-none" />
+                        <input type="number" min="0" value={inventory[size] || 0} onChange={(e) => handleInventoryChange(size, e.target.value)} className="w-full bg-surface-container-low border-none rounded p-2 text-center text-sm outline-none" />
                       </div>
                     ))}
                   </div>
                 </div>
+              )}
 
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-widest text-on-surface mb-2">Product Images (Max 3) *</label>
-                <input name="images" type="file" accept="image/*" multiple required className="w-full bg-surface-container-low border-none rounded p-3 text-sm focus:ring-1 focus:ring-secondary outline-none" />
+              <div className="space-y-4">
+                <label className="block text-xs font-bold uppercase tracking-widest text-on-surface">Product Images (Max 3) *</label>
+                
+                <div>
+                  <label className="block text-[10px] uppercase tracking-widest text-outline-variant mb-1">Image 1 (Required) *</label>
+                  <input name="image1" type="file" accept="image/*" required className="w-full bg-surface-container-low border-none rounded p-3 text-sm focus:ring-1 focus:ring-secondary outline-none" />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase tracking-widest text-outline-variant mb-1">Image 2 (Optional)</label>
+                  <input name="image2" type="file" accept="image/*" className="w-full bg-surface-container-low border-none rounded p-3 text-sm focus:ring-1 focus:ring-secondary outline-none" />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase tracking-widest text-outline-variant mb-1">Image 3 (Optional)</label>
+                  <input name="image3" type="file" accept="image/*" className="w-full bg-surface-container-low border-none rounded p-3 text-sm focus:ring-1 focus:ring-secondary outline-none" />
+                </div>
               </div>
 
               <div className="pt-4 flex justify-end gap-4">
@@ -1191,7 +1223,9 @@ export default function Admin() {
                   code: formData.get('code').toUpperCase(),
                   discountAmount: parseFloat(formData.get('discountAmount')),
                   minPrice: parseFloat(formData.get('minPrice')),
-                  expiryDate: formData.get('expiryDate')
+                  expiryDate: formData.get('expiryDate'),
+                  type: couponType,
+                  maxDiscount: couponType === 'percentage' ? parseFloat(formData.get('maxDiscount')) : null
                 });
                 setIsCouponModalOpen(false);
                 loadData();
@@ -1207,15 +1241,29 @@ export default function Admin() {
                 <label className="block text-xs font-bold uppercase tracking-widest text-on-surface mb-2">Coupon Code *</label>
                 <input name="code" type="text" required placeholder="e.g. SUMMER24" className="w-full bg-surface-container-low border-none rounded p-3 text-sm focus:ring-1 focus:ring-secondary outline-none uppercase" />
               </div>
+              <div className="flex gap-6 mb-4">
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="radio" name="type" value="fixed" checked={couponType === 'fixed'} onChange={() => setCouponType('fixed')} className="accent-secondary" /> Fixed Amount (₹)
+                </label>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="radio" name="type" value="percentage" checked={couponType === 'percentage'} onChange={() => setCouponType('percentage')} className="accent-secondary" /> Percentage (%)
+                </label>
+              </div>
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-widest text-on-surface mb-2">Discount (₹) *</label>
-                  <input name="discountAmount" type="number" min="1" required className="w-full bg-surface-container-low border-none rounded p-3 text-sm focus:ring-1 focus:ring-secondary outline-none" />
+                  <label className="block text-xs font-bold uppercase tracking-widest text-on-surface mb-2">Discount {couponType === 'fixed' ? '(₹)' : '(%)'} *</label>
+                  <input name="discountAmount" type="number" min="1" max={couponType === 'percentage' ? 100 : undefined} required className="w-full bg-surface-container-low border-none rounded p-3 text-sm focus:ring-1 focus:ring-secondary outline-none" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-widest text-on-surface mb-2">Min Price (₹) *</label>
                   <input name="minPrice" type="number" min="0" required className="w-full bg-surface-container-low border-none rounded p-3 text-sm focus:ring-1 focus:ring-secondary outline-none" />
                 </div>
+                {couponType === 'percentage' && (
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-widest text-on-surface mb-2">Max Discount (₹) *</label>
+                    <input name="maxDiscount" type="number" min="1" required className="w-full bg-surface-container-low border-none rounded p-3 text-sm focus:ring-1 focus:ring-secondary outline-none" />
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-bold uppercase tracking-widest text-on-surface mb-2">Expiry Date *</label>

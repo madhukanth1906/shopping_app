@@ -9,9 +9,11 @@ import { ChevronRight, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 import { useToast } from "@/components/ToastProvider";
+import { useAppContext } from "@/components/Providers";
 
 export default function Collections() {
   const { showToast } = useToast();
+  const { openProductModal } = useAppContext();
   const [products, setProducts] = useState({});
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -85,7 +87,7 @@ export default function Collections() {
                   };
 
                   return (
-                    <div key={id} className="min-w-[280px] w-[280px] md:min-w-[320px] md:w-[320px] max-w-[320px] snap-start group relative cursor-pointer" onClick={() => window.location.href=`/product/${id}`}>
+                    <div key={id} className="min-w-[280px] w-[280px] md:min-w-[320px] md:w-[320px] max-w-[320px] snap-start group relative cursor-pointer" onClick={() => openProductModal(product)}>
                       <div className="aspect-[3/4] overflow-hidden rounded-lg bg-surface-container mb-4 relative">
                           <img className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src={imgUrl} />
                           <button onClick={handleWishlist} className="absolute top-4 right-4 p-2 bg-surface/80 backdrop-blur-sm rounded-full text-on-surface hover:bg-on-surface hover:text-surface transition-all z-10">

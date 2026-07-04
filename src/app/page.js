@@ -8,12 +8,22 @@ import { useToast } from "@/components/ToastProvider";
 import { fetchProducts } from "@/lib/catalog";
 import { motion } from 'framer-motion';
 import { Heart, ArrowRight } from 'lucide-react';
-
+import { useAppContext } from "@/components/Providers";
 
 export default function Home() {
   const { showToast } = useToast();
+  const { openProductModal } = useAppContext();
   const [featured, setFeatured] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+
+  const handleNewsletter = (e) => {
+    e.preventDefault();
+    if (newsletterEmail) {
+      showToast("Thank you for subscribing to Azhagii!", "success");
+      setNewsletterEmail("");
+    }
+  };
 
   useEffect(() => {
     async function load() {
@@ -128,7 +138,7 @@ export default function Home() {
                 };
 
                 return (
-                  <div key={id} className="min-w-[320px] w-[320px] max-w-[320px] snap-start group relative cursor-pointer" onClick={() => window.location.href = `/product/${id}`}>
+                  <div key={id} className="min-w-[320px] w-[320px] max-w-[320px] snap-start group relative cursor-pointer" onClick={() => openProductModal(product)}>
                     <div className="relative aspect-[3/4] mb-6 overflow-hidden bg-surface/50 rounded-lg shadow-sm">
                       <img
                         alt={product.name}
@@ -140,7 +150,7 @@ export default function Home() {
                       {/* Quick Shop slide-up Overlay */}
                       <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/50 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end">
                         <button
-                          onClick={(e) => { e.stopPropagation(); window.location.href = `/product/${id}`; }}
+                          onClick={(e) => { e.stopPropagation(); openProductModal(product); }}
                           className="w-full py-3.5 bg-on-surface text-surface font-label text-[10px] uppercase tracking-widest rounded-full hover:bg-secondary transition-colors duration-300 text-center font-semibold"
                         >
                           Quick Add
@@ -230,9 +240,16 @@ export default function Home() {
           <div className="max-w-xl mx-auto text-center px-6">
             <h2 className="font-headline text-3xl mb-4">Join the Azhagii</h2>
             <p className="font-body text-sm mb-8 opacity-80">Receive curated styling advice, early access to new collections, and invitations to exclusive events.</p>
-            <form className="flex flex-col md:flex-row gap-4 items-center">
-              <input className="w-full bg-transparent border-0 border-b border-on-tertiary-fixed/30 py-3 px-0 focus:ring-0 focus:border-on-tertiary-fixed font-label text-sm placeholder:text-on-tertiary-fixed/50" placeholder="Your Email Address" type="email" />
-              <button className="font-label uppercase tracking-widest text-[10px] bg-on-tertiary-fixed text-tertiary-fixed px-8 py-3 hover:opacity-90 transition-opacity">Subscribe</button>
+            <form onSubmit={handleNewsletter} className="flex flex-col md:flex-row gap-4 items-center">
+              <input 
+                value={newsletterEmail}
+                onChange={(e) => setNewsletterEmail(e.target.value)}
+                required
+                className="w-full bg-transparent border-0 border-b border-on-tertiary-fixed/30 py-3 px-0 focus:ring-0 focus:border-on-tertiary-fixed font-label text-sm placeholder:text-on-tertiary-fixed/50" 
+                placeholder="Your Email Address" 
+                type="email" 
+              />
+              <button type="submit" className="font-label uppercase tracking-widest text-[10px] bg-on-tertiary-fixed text-tertiary-fixed px-8 py-3 hover:opacity-90 transition-opacity">Subscribe</button>
             </form>
           </div>
         </section>

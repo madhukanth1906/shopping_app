@@ -288,7 +288,9 @@ export async function saveCoupon(couponData) {
                 code: couponData.code,
                 discountAmount: couponData.discountAmount,
                 minPrice: couponData.minPrice,
-                expiryDate: couponData.expiryDate
+                expiryDate: couponData.expiryDate,
+                type: couponData.type || 'fixed',
+                maxDiscount: couponData.maxDiscount || null
             }
         );
     } catch (error) {

@@ -1,9 +1,10 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Heart, Star, StarHalf, Truck, Ruler, Shield, Plus, Minus, ShoppingBag, RefreshCcw, CheckCircle } from 'lucide-react';
+import { X, Heart, Star, StarHalf, Truck, Ruler, Shield, Plus, Minus, ShoppingBag, RefreshCcw, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAppContext } from './Providers';
 import { useToast } from './ToastProvider';
+import { fetchReviews, saveReview, fetchProducts } from '@/lib/catalog';
 
 export default function ProductModal() {
   const { isProductModalOpen, closeProductModal, selectedProduct, openCart } = useAppContext();
@@ -11,6 +12,12 @@ export default function ProductModal() {
   const [activeTab, setActiveTab] = useState('details');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isInWishlist, setIsInWishlist] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [recommendations, setRecommendations] = useState([]);
+  const [reviewFilter, setReviewFilter] = useState('All');
+  const [newReview, setNewReview] = useState({ rating: 5, userEmail: '', comment: '' });
+  const [hoveredRating, setHoveredRating] = useState(0);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const { showToast } = useToast();
 
   const checkWishlist = () => {
@@ -25,8 +32,35 @@ export default function ProductModal() {
       setCurrentImageIndex(0);
       setActiveTab('details');
       checkWishlist();
+      
+      const productId = selectedProduct.$id || selectedProduct.id;
+      fetchReviews(productId).then(setReviews);
+
+      fetchProducts().then(allProducts => {
+        const prodArray = Object.values(allProducts || {});
+        const cat = selectedProduct.category;
+        if (cat) {
+          setRecommendations(prodArray.filter(p => p.category === cat && (p.$id || p.id) !== productId).slice(0, 3));
+        } else {
+          setRecommendations(prodArray.filter(p => (p.$id || p.id) !== productId).slice(0, 3));
+        }
+      });
     }
   }, [isProductModalOpen, selectedProduct]);
+
+  const [zoomStyle, setZoomStyle] = useState({ transformOrigin: 'center', transform: 'scale(1)' });
+  const handleMouseMove = (e) => {
+    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - left) / width) * 100;
+    const y = ((e.clientY - top) / height) * 100;
+    setZoomStyle({
+      transformOrigin: `${x}% ${y}%`,
+      transform: 'scale(1.8)'
+    });
+  };
+  const handleMouseLeave = () => {
+    setZoomStyle({ transformOrigin: 'center', transform: 'scale(1)' });
+  };
 
   useEffect(() => {
     window.addEventListener('wishlistUpdated', checkWishlist);
@@ -89,10 +123,43 @@ export default function ProductModal() {
     openCart(); // Automatically open cart drawer
   };
 
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    if (!newReview.userEmail || !newReview.comment) {
+      showToast('Please fill out all fields', 'error');
+      return;
+    }
+    setIsSubmittingReview(true);
+    try {
+      const productId = selectedProduct.$id || selectedProduct.id;
+      
+      let parsedName = newReview.userEmail.split('@')[0];
+      parsedName = parsedName.split('.').map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(' ');
+      
+      const reviewData = { 
+        rating: newReview.rating, 
+        comment: newReview.comment, 
+        userName: parsedName, 
+        productId 
+      };
+      
+      await saveReview(reviewData);
+      showToast('Review submitted successfully!', 'success');
+      setNewReview({ rating: 5, userEmail: '', comment: '' });
+      const updatedReviews = await fetchReviews(productId);
+      setReviews(updatedReviews);
+    } catch (error) {
+      showToast('Failed to submit review', 'error');
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
   const tabs = [
     { id: 'details', label: 'DETAILS & SOURCING' },
     { id: 'sizing', label: 'SIZING GUIDE' },
     { id: 'materials', label: 'MATERIALS' },
+    { id: 'reviews', label: 'REVIEWS' },
   ];
 
   return (
@@ -127,29 +194,50 @@ export default function ProductModal() {
               <div className="absolute top-6 left-6 z-20 bg-surface/90 backdrop-blur-sm px-3 py-1.5 rounded font-label text-[10px] uppercase tracking-widest font-bold shadow-sm">
                 NEW COLLECTION
               </div>
-              <AnimatePresence mode="wait">
-                <motion.img
-                  key={currentImageIndex}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  src={images[currentImageIndex]}
-                  alt={selectedProduct.name}
-                  className="w-full h-full object-cover"
-                />
-              </AnimatePresence>
+              <div 
+                className="overflow-hidden relative w-full h-full cursor-zoom-in"
+                onMouseMove={handleMouseMove}
+                onMouseLeave={handleMouseLeave}
+              >
+                <AnimatePresence mode="wait">
+                  <motion.img
+                    key={currentImageIndex}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    src={images[currentImageIndex]}
+                    alt={selectedProduct.name}
+                    style={{ ...zoomStyle, transition: 'transform 0.1s ease-out' }}
+                    className="w-full h-full object-cover"
+                  />
+                </AnimatePresence>
+              </div>
               
               {images.length > 1 && (
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
-                  {images.map((_, idx) => (
-                    <button 
-                      key={idx}
-                      onClick={() => setCurrentImageIndex(idx)}
-                      className={`w-2 h-2 rounded-full transition-all ${idx === currentImageIndex ? 'bg-surface w-6' : 'bg-surface/50'}`}
-                    />
-                  ))}
-                </div>
+                <>
+                  <button 
+                    onClick={() => setCurrentImageIndex(prev => (prev === 0 ? images.length - 1 : prev - 1))}
+                    className="absolute top-1/2 -translate-y-1/2 left-4 z-20 p-2 bg-surface/80 backdrop-blur-sm text-on-surface hover:text-secondary transition-colors rounded-full shadow-sm"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                  <button 
+                    onClick={() => setCurrentImageIndex(prev => (prev === images.length - 1 ? 0 : prev + 1))}
+                    className="absolute top-1/2 -translate-y-1/2 right-4 z-20 p-2 bg-surface/80 backdrop-blur-sm text-on-surface hover:text-secondary transition-colors rounded-full shadow-sm"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+                    {images.map((_, idx) => (
+                      <button 
+                        key={idx}
+                        onClick={() => setCurrentImageIndex(idx)}
+                        className={`w-2 h-2 rounded-full transition-all ${idx === currentImageIndex ? 'bg-surface w-6' : 'bg-surface/50'}`}
+                      />
+                    ))}
+                  </div>
+                </>
               )}
             </div>
 
@@ -170,8 +258,15 @@ export default function ProductModal() {
                   <Star size={16} fill="currentColor" />
                   <Star size={16} fill="currentColor" />
                   <Star size={16} fill="currentColor" />
-                  <StarHalf size={16} fill="currentColor" />
-                  <span className="text-xs text-outline ml-2 font-label uppercase tracking-widest">(4.9 out of 5)</span>
+                  {reviews.length > 0 ? (
+                    <span className="text-sm text-[#7e572e] ml-3 font-headline italic cursor-pointer hover:text-[#5a3e21] transition-colors underline decoration-[#7e572e]/30 underline-offset-4" onClick={() => setActiveTab('reviews')}>
+                      {reviews.length} {reviews.length === 1 ? 'Review' : 'Reviews'} - Write or see a review
+                    </span>
+                  ) : (
+                    <span className="text-sm text-[#7e572e] ml-3 font-headline italic cursor-pointer hover:text-[#5a3e21] transition-colors underline decoration-[#7e572e]/30 underline-offset-4" onClick={() => setActiveTab('reviews')}>
+                      Write or see a review
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -208,22 +303,7 @@ export default function ProductModal() {
                 </div>
               </div>
 
-              {/* Color Selector */}
-              <div className="mb-10">
-                <h3 className="font-label uppercase tracking-widest text-[10px] text-outline font-bold mb-3">
-                  Select Color: <span className="text-on-surface font-bold">CREAM</span>
-                </h3>
-                <div className="flex gap-4">
-                  {/* Cream Swatch - Selected */}
-                  <button className="w-8 h-8 rounded-full border-2 border-on-surface flex items-center justify-center p-0.5">
-                    <span className="w-full h-full rounded-full bg-[#f4ece1]"></span>
-                  </button>
-                  {/* Brown Swatch - Unselected */}
-                  <button className="w-8 h-8 rounded-full border border-outline-variant/30 flex items-center justify-center hover:border-on-surface transition-colors p-0.5">
-                    <span className="w-full h-full rounded-full bg-[#8c6b4a]"></span>
-                  </button>
-                </div>
-              </div>
+
 
               {/* Tabs */}
               <div className="mb-6">
@@ -264,6 +344,81 @@ export default function ProductModal() {
                       {activeTab === 'materials' && (
                         <p>100% Organic Silk. Dry clean only. Iron on low heat. Do not bleach. Made ethically in our Parisian atelier.</p>
                       )}
+                      {activeTab === 'reviews' && (
+                        <div className="flex flex-col gap-6">
+                          {/* Write Review Form */}
+                          <div className="bg-surface-container p-4 rounded-lg">
+                            <h4 className="font-headline text-sm mb-3">Write a Review</h4>
+                            <form onSubmit={handleReviewSubmit} className="flex flex-col gap-3">
+                              <div className="flex items-center gap-2" onMouseLeave={() => setHoveredRating(0)}>
+                                <label className="text-[10px] uppercase font-bold tracking-widest text-outline">Rating:</label>
+                                {[1,2,3,4,5].map(star => {
+                                  const isActive = (hoveredRating || newReview.rating) >= star;
+                                  return (
+                                    <motion.button 
+                                      type="button" 
+                                      key={star} 
+                                      onClick={() => setNewReview({...newReview, rating: star})} 
+                                      onMouseEnter={() => setHoveredRating(star)}
+                                      whileHover={{ scale: 1.2 }}
+                                      whileTap={{ scale: 0.9 }}
+                                      animate={{
+                                        color: isActive ? '#f59e0b' : '#9ca3af',
+                                      }}
+                                      className="transition-colors"
+                                    >
+                                      <Star size={18} fill="currentColor" />
+                                    </motion.button>
+                                  );
+                                })}
+                              </div>
+                              <input type="email" placeholder="Your Email Address" value={newReview.userEmail} onChange={(e) => setNewReview({...newReview, userEmail: e.target.value})} className="w-full bg-surface border border-outline-variant/30 rounded p-2 text-xs outline-none focus:border-on-surface" required />
+                              <textarea placeholder="Your Comment" value={newReview.comment} onChange={(e) => setNewReview({...newReview, comment: e.target.value})} className="w-full bg-surface border border-outline-variant/30 rounded p-2 text-xs outline-none focus:border-on-surface resize-none h-20" required></textarea>
+                              <button type="submit" disabled={isSubmittingReview} className="w-full py-2 bg-on-surface text-surface text-[10px] uppercase tracking-widest font-bold rounded hover:bg-secondary disabled:opacity-50">
+                                {isSubmittingReview ? 'Submitting...' : 'Submit Review'}
+                              </button>
+                            </form>
+                          </div>
+                          
+                          {/* Reviews List */}
+                          <div>
+                            <div className="flex justify-between items-center mb-4">
+                              <h4 className="font-headline text-sm">Customer Reviews</h4>
+                              <div className="flex gap-2">
+                                {['All', '5', '4', '3', '2', '1'].map(f => (
+                                  <button key={f} onClick={() => setReviewFilter(f)} className={`text-[10px] uppercase font-bold tracking-widest px-2 py-1 rounded border ${reviewFilter === f ? 'bg-on-surface text-surface border-on-surface' : 'border-outline-variant/30 text-outline'}`}>
+                                    {f === 'All' ? f : f + '★'}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-4">
+                              {reviews.filter(r => reviewFilter === 'All' || r.rating.toString() === reviewFilter).length === 0 ? (
+                                <p className="text-xs text-outline italic">No reviews match the selected filter.</p>
+                              ) : (
+                                reviews.filter(r => reviewFilter === 'All' || r.rating.toString() === reviewFilter).map(review => (
+                                  <div key={review.$id} className="border-b border-outline-variant/10 pb-4 last:border-0">
+                                    <div className="flex justify-between items-start mb-1">
+                                      <span className="font-bold text-on-surface">{review.userName}</span>
+                                      <div className="flex text-[#f59e0b]">
+                                        {[...Array(review.rating)].map((_, i) => <Star key={i} size={12} fill="currentColor" />)}
+                                      </div>
+                                    </div>
+                                    <p className="text-xs text-outline-variant">{new Date(review.$createdAt).toLocaleDateString()}</p>
+                                    <p className="text-sm text-on-surface mt-2">{review.comment}</p>
+                                    {review.reply && (
+                                      <div className="mt-3 bg-surface-container p-3 rounded border-l-2 border-secondary">
+                                        <p className="text-[10px] uppercase tracking-widest font-bold text-secondary mb-1">Atelier Reply</p>
+                                        <p className="text-xs">{review.reply}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </motion.div>
                   </AnimatePresence>
                 </div>
@@ -300,6 +455,35 @@ export default function ProductModal() {
                   <Heart size={18} strokeWidth={1.5} className={`${isInWishlist ? 'fill-current text-error' : 'group-hover:text-error transition-colors'}`} />
                 </button>
               </div>
+
+              {/* You May Also Like */}
+              {recommendations.length > 0 && (
+                <div className="mt-12 pt-8 border-t border-outline-variant/10">
+                  <h3 className="font-headline text-xl italic mb-6">You May Also Like</h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    {recommendations.map(rec => {
+                      const recImg = Array.isArray(rec.images) && rec.images.length > 0 ? rec.images[0] : rec.image;
+                      return (
+                        <div key={rec.$id || rec.id} className="group cursor-pointer" onClick={() => {
+                          closeProductModal();
+                          setTimeout(() => {
+                            // Quick shop replacement logic depends on state managed by Providers
+                            // Since we can't easily swap modal content without breaking animations,
+                            // let's just use window.location if necessary, or just skip it for now and use a link.
+                            window.location.href = `/shop`; 
+                          }, 300);
+                        }}>
+                          <div className="aspect-[3/4] bg-surface-container rounded overflow-hidden mb-2 relative">
+                            <img src={recImg} alt={rec.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                          </div>
+                          <p className="font-headline text-sm truncate">{rec.name}</p>
+                          <p className="font-label text-[10px] text-outline">{rec.price}</p>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
 
             </div>
           </motion.div>

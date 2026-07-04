@@ -1,12 +1,12 @@
 "use client";
+import { getUser } from "@/lib/auth";
 
 import { useEffect, useState, useRef } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import OrderSuccess from "@/components/OrderSuccess";
 import { saveOrder, validateCoupon, fetchProducts, saveProduct } from "@/lib/catalog";
-import { getUser } from "@/lib/auth";
-import { account } from "@/lib/appwrite";
+
 import { useToast } from "@/components/ToastProvider";
 import Link from "next/link";
 import { CheckCircle, CreditCard, Banknote, MapPin, Truck, ChevronRight } from 'lucide-react';
@@ -14,9 +14,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from "next/navigation";
 
 export default function Checkout() {
-  const { showToast } = useToast();
+  const [user, setUser] = useState(null);
   const router = useRouter();
   
+  useEffect(() => {
+    getUser().then(u => {
+      if (!u) {
+        window.location.href = '/account';
+      } else {
+        setUser(u);
+      }
+    });
+  }, []);
+  const { showToast } = useToast();
+
+    
   const [currentStep, setCurrentStep] = useState(1);
   const [cartItems, setCartItems] = useState([]);
   const [subtotal, setSubtotal] = useState(0);
@@ -44,6 +56,8 @@ export default function Checkout() {
   const [couponCode, setCouponCode] = useState("");
   const [discountAmount, setDiscountAmount] = useState(0);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+
+  
 
   const steps = [
     { id: 1, title: 'Address' },
@@ -147,22 +161,18 @@ export default function Checkout() {
         showToast("Please fill out all address fields.", "error");
         return;
       }
+      
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setCurrentStep(prev => Math.min(prev + 1, 4));
   };
 
+  
+  
   const handlePlaceOrder = async () => {
     setIsSubmitting(true);
     try {
-      const user = await getUser();
-      if (!user) {
-        showToast("Please sign in to place an order.", "error");
-        setTimeout(() => {
-          window.location.href = '/account';
-        }, 1500);
-        return;
-      }
+      // User is already verified via useEffect
       
       const orderPayload = {
         userId: user.$id,
@@ -286,13 +296,22 @@ export default function Checkout() {
 
                     <div className="border-t border-outline-variant/20 pt-6 mt-6">
                       <label className="text-[10px] uppercase tracking-widest font-bold mb-2 block">Mobile Number</label>
-                      <input 
-                        value={shipping.mobileNumber} 
-                        onChange={e => setShipping({...shipping, mobileNumber: e.target.value})} 
-                        placeholder="+919999999999"
-                        className="w-full bg-surface border border-outline-variant/30 rounded-lg px-4 py-3 text-sm focus:border-on-surface focus:ring-1 focus:ring-on-surface outline-none transition-all" 
-                        type="text" 
-                      />
+                      <div className="flex gap-2">
+                        <div className="bg-surface border border-outline-variant/30 rounded-lg px-4 flex items-center justify-center text-sm font-medium text-outline">+91</div>
+                        <input 
+                          value={shipping.mobileNumber} 
+                          onChange={e => {
+                            setShipping({...shipping, mobileNumber: e.target.value});
+                          }} 
+                          placeholder="9999999999"
+                          
+                          className="flex-1 bg-surface border border-outline-variant/30 rounded-lg px-4 py-3 text-sm focus:border-on-surface focus:ring-1 focus:ring-on-surface outline-none transition-all disabled:opacity-60" 
+                          type="text" 
+                        />
+                        
+                      </div>
+                      
+                      
                     </div>
                   </div>
                 </motion.div>
@@ -338,6 +357,26 @@ export default function Checkout() {
                           <p className="font-bold text-[10px] uppercase tracking-widest text-on-surface mb-2">Scan & Pay</p>
                           <p className="text-on-surface-variant text-xs mb-1">Please make the payment to the following UPI ID:</p>
                           <p className="font-headline text-secondary text-xl mt-2">9940984501@ybl</p>
+                        </motion.div>
+                      )}
+                    </div>
+                    
+                    <div className={`flex flex-col p-6 bg-surface border shadow-sm rounded-xl transition-all ${shipping.paymentMethod === 'Credit Card' ? 'border-secondary ring-1 ring-secondary bg-secondary/5' : 'border-outline-variant/20 hover:border-outline-variant/50'}`}>
+                      <label className="flex items-center cursor-pointer">
+                        <input checked={shipping.paymentMethod === 'Credit Card'} onChange={() => setShipping({...shipping, paymentMethod: 'Credit Card'})} className="text-secondary focus:ring-secondary mr-6 accent-secondary" name="payment" type="radio" />
+                        <div className="flex-1 flex items-center gap-4">
+                          <CreditCard size={24} strokeWidth={1.5} className={shipping.paymentMethod === 'Credit Card' ? "text-secondary" : "text-outline"} />
+                          <span className="uppercase tracking-[0.2em] text-xs font-bold">Credit Card (Stripe)</span>
+                        </div>
+                      </label>
+                      {shipping.paymentMethod === 'Credit Card' && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-6 ml-10 p-5 bg-surface rounded-lg shadow-inner border border-outline-variant/10 text-sm space-y-4 overflow-hidden">
+                          <p className="font-bold text-[10px] uppercase tracking-widest text-on-surface mb-2">Secure Payment Mock (Test Mode)</p>
+                          <input type="text" placeholder="Card Number (e.g. 4242 4242 4242 4242)" className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-4 py-3 text-sm focus:ring-1 focus:ring-secondary outline-none transition-all" />
+                          <div className="flex gap-4">
+                            <input type="text" placeholder="MM/YY" className="w-1/2 bg-surface-container-low border border-outline-variant/30 rounded px-4 py-3 text-sm focus:ring-1 focus:ring-secondary outline-none transition-all" />
+                            <input type="text" placeholder="CVC" className="w-1/2 bg-surface-container-low border border-outline-variant/30 rounded px-4 py-3 text-sm focus:ring-1 focus:ring-secondary outline-none transition-all" />
+                          </div>
                         </motion.div>
                       )}
                     </div>

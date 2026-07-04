@@ -1,19 +1,31 @@
 "use client";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { fetchProducts } from "@/lib/catalog";
-import { Home, User, Heart, ShoppingBag } from "lucide-react";
+import { Home, User, Heart, ShoppingBag, Search, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppContext } from './Providers';
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { openCart } = useAppContext();
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [categories, setCategories] = useState([]);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/shop?search=${encodeURIComponent(searchQuery.trim())}`);
+      setIsSearchOpen(false);
+      setSearchQuery("");
+    }
+  };
 
   const updateCounts = () => {
     const cart = JSON.parse(localStorage.getItem('atelier_cart') || '[]');
@@ -87,6 +99,32 @@ export default function Navbar() {
           </div>
         </div>
         <div className="flex items-center gap-6">
+          <div className="relative flex items-center">
+            <AnimatePresence>
+              {isSearchOpen && (
+                <motion.form 
+                  initial={{ width: 0, opacity: 0 }}
+                  animate={{ width: 200, opacity: 1 }}
+                  exit={{ width: 0, opacity: 0 }}
+                  onSubmit={handleSearch}
+                  className="overflow-hidden absolute right-8"
+                >
+                  <input
+                    autoFocus
+                    type="text"
+                    placeholder="Search collection..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-surface-container-low text-xs border border-outline-variant/30 rounded-full px-4 py-2 outline-none focus:border-secondary transition-colors text-on-surface"
+                  />
+                </motion.form>
+              )}
+            </AnimatePresence>
+            <button onClick={() => setIsSearchOpen(!isSearchOpen)} className="opacity-70 hover:opacity-100 transition-opacity p-2 z-10 bg-surface rounded-full">
+              {isSearchOpen ? <X size={20} strokeWidth={1.5} className="text-on-surface" /> : <Search size={20} strokeWidth={1.5} className="text-on-surface" />}
+            </button>
+          </div>
+
           {pathname === '/account' || pathname === '/admin' ? (
             <Link href="/" className="opacity-70 hover:opacity-100 transition-opacity"><Home size={20} strokeWidth={1.5} className="text-on-surface" /></Link>
           ) : (

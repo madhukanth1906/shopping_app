@@ -3,18 +3,21 @@
 import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { getUser, loginWithGoogle, logout } from "@/lib/auth";
+// Appwrite Auth Removed
 import { fetchUserOrders, cancelOrder, fetchProducts } from "@/lib/catalog";
+import { getUser, loginWithGoogle, logout } from "@/lib/auth";
 import { account } from "@/lib/appwrite";
 import { useToast } from "@/components/ToastProvider";
 import Link from "next/link";
 import { LayoutDashboard, History, MapPin, Heart, ShieldCheck, LogOut, PlusCircle, Trash2, X, ChevronRight, Settings, UserCircle, Bell, ArrowRight, Plus, Truck, PackageCheck, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAppContext } from "@/components/Providers";
 
-import { ID } from "appwrite";
+import { v4 as uuidv4 } from "uuid";
 
 export default function Account() {
   const { showToast } = useToast();
+      const { openProductModal } = useAppContext();
   const [user, setUser] = useState(null);
   const [orders, setOrders] = useState([]);
   const [wishlist, setWishlist] = useState([]);
@@ -97,7 +100,7 @@ export default function Account() {
   const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
-    async function fetchUser() {
+    async function fetchData() {
       try {
         const w = JSON.parse(localStorage.getItem('atelier_wishlist') || '[]');
         setWishlist(w);
@@ -105,18 +108,22 @@ export default function Account() {
         const productsData = await fetchProducts();
         setCatalog(productsData || {});
         
-        const u = await getUser();
-        setUser(u);
-        if (u) {
-            setProfileName(u.name || '');
-            setProfilePhone(u.phone || '');
-            const userOrders = await fetchUserOrders(u.$id);
+        
+        const currentUser = await getUser();
+        if (currentUser) {
+            setUser(currentUser);
+            setProfileName(currentUser.name);
+            setProfilePhone(currentUser.phone || '');
+            
+            const userOrders = await fetchUserOrders(currentUser.$id);
             setOrders(userOrders);
 
             const prefs = await account.getPrefs();
             if (prefs.addresses) {
               setAddresses(JSON.parse(prefs.addresses));
             }
+        } else {
+            setUser(null);
         }
       } catch (err) {
         console.error(err);
@@ -124,18 +131,10 @@ export default function Account() {
         setLoading(false);
       }
     }
-    fetchUser();
+    fetchData();
   }, []);
 
-  const handleLogin = async () => {
-    try {
-      await loginWithGoogle();
-    } catch (err) {
-      console.error(err);
-      showToast('Failed to login with Google.', 'error');
-    }
-  };
-
+  
   const handleLogout = async () => {
     try {
       await logout();
@@ -146,22 +145,15 @@ export default function Account() {
     }
   };
 
+
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     setIsUpdatingProfile(true);
     try {
-        if (profileName !== user.name) {
-            await account.updateName(profileName);
+        if (user) {
+           await account.updateName(profileName);
+           showToast('Profile updated successfully.', 'success');
         }
-        if (profilePhone !== user.phone) {
-            // Appwrite requires phone numbers in international format e.g., +123456789
-            await account.updatePhone(profilePhone, 'password123'); // Often requires password, might fail without proper auth setup in appwrite. 
-            // We will just try updating prefs instead for extra info to be safe and avoiding strict phone auth blocks.
-        }
-        
-        const u = await getUser();
-        setUser(u);
-        showToast('Profile updated successfully!', 'success');
     } catch (err) {
         console.error(err);
         showToast('Failed to update profile.', 'error');
@@ -173,9 +165,11 @@ export default function Account() {
   const handleSaveAddress = async (e) => {
     e.preventDefault();
     try {
-      const addrWithId = { ...newAddress, id: ID.unique() };
+      const addrWithId = { ...newAddress, id: uuidv4() };
       const updatedAddresses = [...addresses, addrWithId];
-      await account.updatePrefs({ addresses: JSON.stringify(updatedAddresses) });
+      if (user) {
+         await account.updatePrefs({ addresses: JSON.stringify(updatedAddresses) });
+      }
       setAddresses(updatedAddresses);
       setNewAddress({ fullName: '', address: '', city: '', postalCode: '' });
       setIsAddingAddress(false);
@@ -241,7 +235,9 @@ export default function Account() {
   const handleDeleteAddress = async (id) => {
     try {
       const updatedAddresses = addresses.filter(a => a.id !== id);
-      await account.updatePrefs({ addresses: JSON.stringify(updatedAddresses) });
+      if (user) {
+         await account.updatePrefs({ addresses: JSON.stringify(updatedAddresses) });
+      }
       setAddresses(updatedAddresses);
       showToast('Address deleted.', 'success');
     } catch (err) {
@@ -347,6 +343,14 @@ export default function Account() {
                             Cancel
                           </button>
                         )}
+                        {(order.status === 'Shipped' || order.status === 'Processing' || order.status === 'Delivered') && (
+                          <button 
+                            onClick={() => setSelectedTrackingOrder(order)}
+                            className="text-[10px] font-bold uppercase tracking-widest text-on-surface hover:text-secondary hover:underline transition-colors ml-4"
+                          >
+                            Track Shipment
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );
@@ -372,23 +376,9 @@ export default function Account() {
       
       <main className="pt-32 pb-20 px-6 md:px-12 max-w-[1440px] mx-auto flex flex-col gap-12 flex-grow w-full">
         {!user ? (
-          <div className="w-full flex flex-col items-center justify-center flex-grow text-center space-y-8">
-            <h1 className="text-5xl md:text-6xl font-headline tracking-tight text-on-surface">Welcome to <span className="italic">Azhagii</span></h1>
-            <p className="text-on-surface-variant font-label text-sm tracking-widest uppercase max-w-md mx-auto">
-              Access your curated wishlist, track orders, and manage your preferred shipping details.
-            </p>
-            <button 
-              onClick={handleLogin}
-              className="group flex items-center gap-4 bg-surface border border-outline-variant/20 shadow-sm px-8 py-4 rounded-full hover:shadow-md hover:border-outline-variant/40 transition-all text-sm font-bold uppercase tracking-widest text-on-surface"
-            >
-              <svg className="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-              </svg>
-              Sign in with Google
-            </button>
+          <div className="w-full flex flex-col items-center justify-center flex-grow text-center py-20 space-y-8">
+            <h1 className="text-5xl md:text-6xl font-headline tracking-tight text-on-surface mb-8">Welcome to <span className="italic">Azhagii</span></h1>
+            <button onClick={loginWithGoogle} className="bg-on-surface text-surface px-8 py-4 rounded-full text-sm font-bold uppercase tracking-widest hover:bg-secondary transition-all">Continue with Google</button>
           </div>
         ) : (
           <div className="w-full flex flex-col lg:flex-row gap-12 lg:gap-24 relative">
@@ -424,7 +414,7 @@ export default function Account() {
                     </button>
                   ))}
                   
-                  {user?.email === 'madhu9940984501@gmail.com' && (
+                  {['madhu9940984501@gmail.com', 'dharanimpdm2910@gmail.com'].includes(user?.email) && (
                     <div className="pt-6 mt-6 border-t border-outline-variant/10">
                       <Link className="flex items-center gap-4 px-4 py-3 text-on-surface hover:bg-surface/50 rounded-xl transition-all font-semibold" href="/admin">
                         <ShieldCheck size={18} strokeWidth={1.5} className="text-secondary" />
@@ -643,7 +633,7 @@ export default function Account() {
                               </div>
                             )}
 
-                            <Link href={`/product/${item.id}`} className="absolute inset-0 z-0"></Link>
+                            <div onClick={() => openProductModal(item)} className="absolute inset-0 z-0 cursor-pointer"></div>
                           </div>
                           <div className="space-y-1">
                             <h4 className="font-label uppercase text-[10px] tracking-widest text-outline">Saved Item</h4>
@@ -846,7 +836,8 @@ export default function Account() {
               </motion.div>
             </motion.div>
           )}
-        </AnimatePresence>\n      </main>
+        </AnimatePresence>
+      </main>
       
       {isCancelModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-4">

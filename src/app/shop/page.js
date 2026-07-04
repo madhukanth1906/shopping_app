@@ -17,6 +17,7 @@ function ShopContent() {
   const searchParams = useSearchParams();
   const filterParam = searchParams.get("filter");
   const categoryParam = searchParams.get("category");
+  const searchParam = searchParams.get("search") || "";
 
   const [products, setProducts] = useState({});
   const [loading, setLoading] = useState(true);
@@ -30,7 +31,6 @@ function ShopContent() {
   const [viewMode, setViewMode] = useState('grid');
   
   const [selectedOccasions, setSelectedOccasions] = useState([]);
-  const [selectedColors, setSelectedColors] = useState([]);
   const [selectedFabrics, setSelectedFabrics] = useState([]);
   const [preferredSize, setPreferredSize] = useState(null);
   const [selectedCategories, setSelectedCategories] = useState(categoryParam ? [categoryParam] : []);
@@ -88,18 +88,23 @@ function ShopContent() {
   };
 
   let filteredProducts = Object.values(products).filter(product => {
-    const pSize = product.size || 'One Size';
-    const matchSize = selectedSizes.length === 0 || selectedSizes.includes(pSize) || selectedSizes.some(s => pSize.includes(s));
+    // Inventory format usually { S: 10, M: 0, L: 5 }
+    const availableSizes = product.inventory 
+      ? Object.entries(product.inventory).filter(([_, qty]) => qty > 0).map(([s]) => s)
+      : (product.size ? product.size.split(',').map(s => s.trim()) : ['One Size']);
+      
+    const matchSize = selectedSizes.length === 0 || selectedSizes.some(s => availableSizes.includes(s));
     
     const priceNum = parsePrice(product.price);
     const matchPrice = priceNum <= maxPrice;
 
     const matchOccasion = selectedOccasions.length === 0 || (product.occasion && selectedOccasions.includes(product.occasion));
-    const matchColor = selectedColors.length === 0 || (product.color && selectedColors.includes(product.color));
     const matchFabric = selectedFabrics.length === 0 || (product.fabric && selectedFabrics.includes(product.fabric));
-    const matchCategory = selectedCategories.length === 0 || selectedCategories.includes(product.category);
+    const matchCategory = selectedCategories.length === 0 || selectedCategories.some(cat => cat.toLowerCase() === product.category?.toLowerCase());
 
-    return matchSize && matchPrice && matchOccasion && matchColor && matchFabric && matchCategory;
+    const matchSearch = !searchParam || product.name.toLowerCase().includes(searchParam.toLowerCase()) || (product.description && product.description.toLowerCase().includes(searchParam.toLowerCase()));
+
+    return matchSize && matchPrice && matchOccasion && matchFabric && matchCategory && matchSearch;
   });
 
 
@@ -239,33 +244,7 @@ function ShopContent() {
                   ))}
                 </div>
               </div>
-              
-              {/* Color Palette */}
-              <div>
-                <h3 className="font-label text-xs uppercase tracking-[0.2em] text-on-surface font-bold mb-6">Color Palette</h3>
-                <div className="flex flex-wrap gap-4">
-                  {[
-                    {name: 'Cream', hex: '#f4ece1'},
-                    {name: 'Blush', hex: '#ead8c7'},
-                    {name: 'Terra', hex: '#7e572e'},
-                    {name: 'Soft Black', hex: '#303331'},
-                    {name: 'Pure White', hex: '#ffffff'}
-                  ].map(c => (
-                    <button 
-                      key={c.name}
-                      onClick={() => toggleFilter(setSelectedColors, c.name)}
-                      title={c.name}
-                      style={{ backgroundColor: c.hex }}
-                      className={`w-6 h-6 rounded-full border transition-all ${
-                        selectedColors.includes(c.name) 
-                          ? 'border-secondary ring-2 ring-offset-2 ring-secondary scale-110' 
-                          : 'border-outline-variant/30 hover:scale-110'
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
-              
+
               {/* Price Range */}
               <div>
                 <h3 className="font-label text-xs uppercase tracking-[0.2em] text-on-surface font-bold mb-6">Price: ₹{maxPrice}</h3>
