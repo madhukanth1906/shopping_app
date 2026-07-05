@@ -1,5 +1,6 @@
 "use client";
 import { getUser } from "@/lib/auth";
+import { account } from "@/lib/appwrite";
 
 import { useEffect, useState, useRef } from "react";
 import Navbar from "@/components/Navbar";
@@ -301,7 +302,10 @@ export default function Checkout() {
                         <input 
                           value={shipping.mobileNumber} 
                           onChange={e => {
-                            setShipping({...shipping, mobileNumber: e.target.value});
+                            const val = e.target.value.replace(/\D/g, '');
+                            if (val.length <= 10) {
+                              setShipping({...shipping, mobileNumber: val});
+                            }
                           }} 
                           placeholder="9999999999"
                           
