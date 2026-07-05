@@ -42,7 +42,7 @@ export default function Checkout() {
     city: "",
     postalCode: "",
     mobileNumber: "",
-    paymentMethod: "Cash on Delivery"
+    paymentMethod: "Online Payment"
   });
 
   // Location Fetch State
@@ -337,13 +337,6 @@ export default function Checkout() {
                 <motion.div key="step3" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-8">
                   <h2 className="font-headline text-3xl mb-8">Payment Method</h2>
                   <div className="space-y-4">
-                    <label className={`flex items-center p-6 bg-surface border shadow-sm rounded-xl cursor-pointer transition-all ${shipping.paymentMethod === 'Cash on Delivery' ? 'border-secondary ring-1 ring-secondary bg-secondary/5' : 'border-outline-variant/20 hover:border-outline-variant/50'}`}>
-                      <input checked={shipping.paymentMethod === 'Cash on Delivery'} onChange={() => setShipping({...shipping, paymentMethod: 'Cash on Delivery'})} className="text-secondary focus:ring-secondary mr-6 accent-secondary" name="payment" type="radio" />
-                      <div className="flex-1 flex items-center gap-4">
-                        <Banknote size={24} strokeWidth={1.5} className={shipping.paymentMethod === 'Cash on Delivery' ? "text-secondary" : "text-outline"} />
-                        <span className="uppercase tracking-[0.2em] text-xs font-bold">Cash on Delivery</span>
-                      </div>
-                    </label>
                     <div className={`flex flex-col p-6 bg-surface border shadow-sm rounded-xl transition-all ${shipping.paymentMethod === 'Online Payment' ? 'border-secondary ring-1 ring-secondary bg-secondary/5' : 'border-outline-variant/20 hover:border-outline-variant/50'}`}>
                       <label className="flex items-center cursor-pointer">
                         <input checked={shipping.paymentMethod === 'Online Payment'} onChange={() => setShipping({...shipping, paymentMethod: 'Online Payment'})} className="text-secondary focus:ring-secondary mr-6 accent-secondary" name="payment" type="radio" />

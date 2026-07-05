@@ -49,7 +49,7 @@ export default function Footer() {
         </div>
       </div>
       <div className="max-w-[1440px] mx-auto mt-24 pt-8 border-t border-outline-variant/10 flex flex-col md:flex-row justify-between items-center gap-6 opacity-60 text-[9px] font-bold tracking-[0.25em] uppercase text-outline">
-        <span>© 2024 AZHAGII. ALL RIGHTS RESERVED.</span>
+        <span>© 2026 AZHAGII. ALL RIGHTS RESERVED.</span>
         <div className="flex gap-8">
           <span>NEW YORK</span>
           <span>PARIS</span>
