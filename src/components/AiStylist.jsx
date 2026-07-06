@@ -58,10 +58,29 @@ export default function AiStylist() {
       
       return (
         <span key={i}>
-          {displayLine.split(/(\*\*.*?\*\*)/g).map((part, j) => 
-            part.startsWith('**') && part.endsWith('**') ? 
-              <strong key={j}>{part.slice(2, -2)}</strong> : part
-          )}
+          {displayLine.split(/(\*\*.*?\*\*|\[.*?\]\(.*?\))/g).map((part, j) => {
+            if (part.startsWith('**') && part.endsWith('**')) {
+              return <strong key={j}>{part.slice(2, -2)}</strong>;
+            }
+            if (part.startsWith('[') && part.endsWith(')')) {
+              const textMatch = part.match(/\[(.*?)\]/);
+              const urlMatch = part.match(/\((.*?)\)/);
+              if (textMatch && urlMatch) {
+                return (
+                  <a 
+                    key={j} 
+                    href={urlMatch[1]} 
+                    className="text-secondary hover:underline underline-offset-2 font-medium" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                  >
+                    {textMatch[1]}
+                  </a>
+                );
+              }
+            }
+            return part;
+          })}
           {i < content.split('\n').length - 1 && <br />}
         </span>
       );
