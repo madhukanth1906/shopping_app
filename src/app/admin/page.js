@@ -163,7 +163,13 @@ export default function Admin() {
         // the "product-images" bucket doesn't exist in Appwrite Storage, 
         // or its permissions are not set to allow creating files.
         const uploaded = await storage.createFile(BUCKET_ID, ID.unique(), file);
-        const viewUrl = `${APPWRITE_ENDPOINT}/storage/buckets/${BUCKET_ID}/files/${uploaded.$id}/view?project=${APPWRITE_PROJECT_ID}`;
+        let viewUrl = `${APPWRITE_ENDPOINT}/storage/buckets/${BUCKET_ID}/files/${uploaded.$id}/view?project=${APPWRITE_PROJECT_ID}`;
+        
+        // Let the frontend know this is a video by appending a dummy extension query param
+        if (file.type.startsWith('video/')) {
+          viewUrl += '&ext=.mp4';
+        }
+
         uploadedImageUrls.push(viewUrl);
       }
 
