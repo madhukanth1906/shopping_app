@@ -9,6 +9,8 @@ export const metadata = {
 import { Providers } from "@/components/Providers";
 import CartDrawer from "@/components/CartDrawer";
 import ProductModal from "@/components/ProductModal";
+import AiStylist from "@/components/AiStylist";
+import { CurrencyProvider } from "@/components/CurrencyProvider";
 
 export default function RootLayout({ children }) {
   return (
@@ -20,13 +22,16 @@ export default function RootLayout({ children }) {
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
       </head>
       <body className="bg-background text-on-background font-body selection:bg-secondary-container selection:text-on-secondary-container antialiased">
-        <Providers>
-          <ToastProvider>
-            {children}
-            <CartDrawer />
-            <ProductModal />
-          </ToastProvider>
-        </Providers>
+        <CurrencyProvider>
+          <Providers>
+            <ToastProvider>
+              {children}
+              <CartDrawer />
+              <ProductModal />
+              <AiStylist />
+            </ToastProvider>
+          </Providers>
+        </CurrencyProvider>
       </body>
     </html>
   );

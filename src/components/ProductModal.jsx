@@ -4,7 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Heart, Star, StarHalf, Truck, Ruler, Shield, Plus, Minus, ShoppingBag, RefreshCcw, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAppContext } from './Providers';
 import { useToast } from './ToastProvider';
-import { fetchReviews, saveReview, fetchProducts } from '@/lib/catalog';
+import { account, storage, ID, BUCKET_ID, APPWRITE_PROJECT_ID, APPWRITE_ENDPOINT } from '@/lib/appwrite';
+import { fetchReviews, saveReview, fetchProducts, deleteReview } from '@/lib/catalog';
+import SizeCalculator from './SizeCalculator';
+import { useCurrency } from './CurrencyProvider';
 
 export default function ProductModal() {
   const { isProductModalOpen, closeProductModal, selectedProduct, openCart } = useAppContext();
@@ -15,10 +18,20 @@ export default function ProductModal() {
   const [reviews, setReviews] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [reviewFilter, setReviewFilter] = useState('All');
-  const [newReview, setNewReview] = useState({ rating: 5, userEmail: '', comment: '' });
+  const [newReview, setNewReview] = useState({ rating: 5, userEmail: '', comment: '', file: null });
   const [hoveredRating, setHoveredRating] = useState(0);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [isSizeCalcOpen, setIsSizeCalcOpen] = useState(false);
+  const [userAccount, setUserAccount] = useState(null);
   const { showToast } = useToast();
+  const { formatPrice } = useCurrency();
+
+  useEffect(() => {
+    account.get().then(res => {
+      setUserAccount(res);
+      setNewReview(prev => ({ ...prev, userEmail: res.email }));
+    }).catch(() => {});
+  }, []);
 
   const checkWishlist = () => {
     if (!selectedProduct) return;
@@ -129,24 +142,37 @@ export default function ProductModal() {
       showToast('Please fill out all fields', 'error');
       return;
     }
+
     setIsSubmittingReview(true);
     try {
-      const productId = selectedProduct.$id || selectedProduct.id;
-      
-      let parsedName = newReview.userEmail.split('@')[0];
-      parsedName = parsedName.split('.').map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(' ');
-      
-      const reviewData = { 
-        rating: newReview.rating, 
-        comment: newReview.comment, 
-        userName: parsedName, 
-        productId 
-      };
-      
-      await saveReview(reviewData);
-      showToast('Review submitted successfully!', 'success');
-      setNewReview({ rating: 5, userEmail: '', comment: '' });
-      const updatedReviews = await fetchReviews(productId);
+      let finalComment = newReview.comment;
+
+      if (newReview.file) {
+        const fileResponse = await storage.createFile(BUCKET_ID, ID.unique(), newReview.file);
+        finalComment += `\n[IMAGE:${fileResponse.$id}]`;
+      }
+
+      await saveReview({
+        productId: selectedProduct.$id || selectedProduct.id,
+        userName: newReview.userEmail.split('@')[0],
+        rating: newReview.rating,
+        comment: finalComment
+      });
+
+      // Award 100 points for review
+      if (userAccount) {
+        try {
+          const prefs = await account.getPrefs();
+          const currentPoints = prefs.points || 0;
+          await account.updatePrefs({ ...prefs, points: currentPoints + 100 });
+        } catch (e) {
+          console.error("Failed to award points for review", e);
+        }
+      }
+
+      setNewReview({ rating: 5, userEmail: userAccount?.email || '', comment: '', file: null });
+      showToast('Review submitted! You earned 100 Atelier Points!', 'success');
+      const updatedReviews = await fetchReviews(selectedProduct.$id || selectedProduct.id);
       setReviews(updatedReviews);
     } catch (error) {
       showToast('Failed to submit review', 'error');
@@ -200,17 +226,37 @@ export default function ProductModal() {
                 onMouseLeave={handleMouseLeave}
               >
                 <AnimatePresence mode="wait">
-                  <motion.img
-                    key={currentImageIndex}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    src={images[currentImageIndex]}
-                    alt={selectedProduct.name}
-                    style={{ ...zoomStyle, transition: 'transform 0.1s ease-out' }}
-                    className="w-full h-full object-cover"
-                  />
+                  {images[currentImageIndex] && images[currentImageIndex].match(/\.(mp4|webm)/i) ? (
+                    <motion.div
+                      key={currentImageIndex}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="w-full h-full"
+                    >
+                      <video
+                        src={images[currentImageIndex]}
+                        className="w-full h-full object-cover"
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                      />
+                    </motion.div>
+                  ) : (
+                    <motion.img
+                      key={currentImageIndex}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      src={images[currentImageIndex]}
+                      alt={selectedProduct.name}
+                      style={{ ...zoomStyle, transition: 'transform 0.1s ease-out' }}
+                      className="w-full h-full object-cover"
+                    />
+                  )}
                 </AnimatePresence>
               </div>
               
@@ -252,7 +298,7 @@ export default function ProductModal() {
               </h1>
               
               <div className="flex items-center gap-6 mb-8">
-                <p className="font-headline text-2xl text-on-surface font-bold">{selectedProduct.price}</p>
+                <p className="font-headline text-2xl text-on-surface font-bold">{formatPrice(String(selectedProduct.price).replace(/[^0-9.]/g, ''))}</p>
                 <div className="flex items-center gap-1 text-[#f59e0b]">
                   <Star size={16} fill="currentColor" />
                   <Star size={16} fill="currentColor" />
@@ -274,7 +320,7 @@ export default function ProductModal() {
               <div className="mb-8">
                 <div className="flex justify-between items-center mb-3">
                   <h3 className="font-label uppercase tracking-widest text-[10px] text-outline font-bold">Select Size:</h3>
-                  <button className="text-[10px] text-[#7e572e] font-bold uppercase tracking-widest hover:text-on-surface transition-colors">
+                  <button onClick={() => setIsSizeCalcOpen(true)} className="text-[10px] text-[#7e572e] font-bold uppercase tracking-widest hover:text-on-surface transition-colors">
                     SIZE ADVISOR
                   </button>
                 </div>
@@ -374,6 +420,17 @@ export default function ProductModal() {
                               </div>
                               <input type="email" placeholder="Your Email Address" value={newReview.userEmail} onChange={(e) => setNewReview({...newReview, userEmail: e.target.value})} className="w-full bg-surface border border-outline-variant/30 rounded p-2 text-xs outline-none focus:border-on-surface" required />
                               <textarea placeholder="Your Comment" value={newReview.comment} onChange={(e) => setNewReview({...newReview, comment: e.target.value})} className="w-full bg-surface border border-outline-variant/30 rounded p-2 text-xs outline-none focus:border-on-surface resize-none h-20" required></textarea>
+                              <div className="flex items-center gap-2">
+                                <label className="text-[10px] uppercase font-bold tracking-widest text-outline cursor-pointer bg-surface border border-outline-variant/30 px-3 py-2 rounded hover:bg-surface-container transition-colors">
+                                  {newReview.file ? newReview.file.name : 'Attach a Photo'}
+                                  <input type="file" accept="image/*" onChange={(e) => setNewReview({...newReview, file: e.target.files[0]})} className="hidden" />
+                                </label>
+                                {newReview.file && (
+                                  <button type="button" onClick={() => setNewReview({...newReview, file: null})} className="text-error text-xs p-1 hover:bg-error/10 rounded">
+                                    <X size={14} />
+                                  </button>
+                                )}
+                              </div>
                               <button type="submit" disabled={isSubmittingReview} className="w-full py-2 bg-on-surface text-surface text-[10px] uppercase tracking-widest font-bold rounded hover:bg-secondary disabled:opacity-50">
                                 {isSubmittingReview ? 'Submitting...' : 'Submit Review'}
                               </button>
@@ -400,12 +457,42 @@ export default function ProductModal() {
                                   <div key={review.$id} className="border-b border-outline-variant/10 pb-4 last:border-0">
                                     <div className="flex justify-between items-start mb-1">
                                       <span className="font-bold text-on-surface">{review.userName}</span>
-                                      <div className="flex text-[#f59e0b]">
-                                        {[...Array(review.rating)].map((_, i) => <Star key={i} size={12} fill="currentColor" />)}
+                                      <div className="flex items-center gap-4">
+                                        <div className="flex text-[#f59e0b]">
+                                          {[...Array(review.rating)].map((_, i) => <Star key={i} size={12} fill="currentColor" />)}
+                                        </div>
+                                        {userAccount && userAccount.email.split('@')[0].toLowerCase() === review.userName.toLowerCase() && (
+                                          <button 
+                                            onClick={async () => {
+                                              try {
+                                                await deleteReview(review.$id);
+                                                showToast('Review deleted', 'success');
+                                                fetchReviews(selectedProduct.$id || selectedProduct.id).then(setReviews);
+                                              } catch (e) {
+                                                showToast('Failed to delete review', 'error');
+                                              }
+                                            }}
+                                            className="text-error text-[10px] uppercase font-bold tracking-widest hover:underline"
+                                          >
+                                            Delete
+                                          </button>
+                                        )}
                                       </div>
                                     </div>
                                     <p className="text-xs text-outline-variant">{new Date(review.$createdAt).toLocaleDateString()}</p>
-                                    <p className="text-sm text-on-surface mt-2">{review.comment}</p>
+                                    <p className="text-sm text-on-surface mt-2">{review.comment.replace(/\n?\[IMAGE:([^\]]+)\]/, '')}</p>
+                                    
+                                    {review.comment.match(/\[IMAGE:([^\]]+)\]/) && (
+                                      <div className="mt-3">
+                                        <img 
+                                          src={`${APPWRITE_ENDPOINT}/storage/buckets/${BUCKET_ID}/files/${review.comment.match(/\[IMAGE:([^\]]+)\]/)[1]}/view?project=${APPWRITE_PROJECT_ID}`} 
+                                          alt="Review attachment" 
+                                          className="w-24 h-24 object-cover rounded-lg border border-outline-variant/20 shadow-sm cursor-zoom-in hover:opacity-90 transition-opacity"
+                                          onClick={() => window.open(`${APPWRITE_ENDPOINT}/storage/buckets/${BUCKET_ID}/files/${review.comment.match(/\[IMAGE:([^\]]+)\]/)[1]}/view?project=${APPWRITE_PROJECT_ID}`, '_blank')}
+                                        />
+                                      </div>
+                                    )}
+
                                     {review.reply && (
                                       <div className="mt-3 bg-surface-container p-3 rounded border-l-2 border-secondary">
                                         <p className="text-[10px] uppercase tracking-widest font-bold text-secondary mb-1">Atelier Reply</p>
@@ -477,7 +564,7 @@ export default function ProductModal() {
                             <img src={recImg} alt={rec.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                           </div>
                           <p className="font-headline text-sm truncate">{rec.name}</p>
-                          <p className="font-label text-[10px] text-outline">{rec.price}</p>
+                          <p className="font-label text-[10px] text-outline">{formatPrice(String(rec.price).replace(/[^0-9.]/g, ''))}</p>
                         </div>
                       )
                     })}
@@ -487,6 +574,7 @@ export default function ProductModal() {
 
             </div>
           </motion.div>
+          <SizeCalculator isOpen={isSizeCalcOpen} onClose={() => setIsSizeCalcOpen(false)} />
         </div>
       )}
     </AnimatePresence>

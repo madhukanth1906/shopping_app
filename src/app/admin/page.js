@@ -24,6 +24,8 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState("Dashboard");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [dismissedAlerts, setDismissedAlerts] = useState([]);
+  const [adminPin, setAdminPin] = useState("");
+  const [isAuthenticatedAdmin, setIsAuthenticatedAdmin] = useState(false);
 
   const [products, setProducts] = useState({});
   const [orders, setOrders] = useState([]);
@@ -350,6 +352,38 @@ export default function Admin() {
     setDismissedAlerts([...dismissedAlerts, ...allAlertIds]);
   };
 
+  if (!isAuthenticatedAdmin && isAdmin) {
+    return (
+      <div className="bg-surface text-on-surface min-h-screen flex items-center justify-center p-6">
+        <div className="bg-surface-container-low p-8 rounded-2xl shadow-xl max-w-sm w-full text-center border border-outline-variant/20">
+          <h2 className="font-headline text-2xl mb-2">Admin Access</h2>
+          <p className="text-sm text-outline mb-6">Please enter your 4-digit PIN.</p>
+          <input 
+            type="password" 
+            value={adminPin}
+            onChange={(e) => setAdminPin(e.target.value)}
+            className="w-full bg-surface text-center tracking-[1em] text-2xl py-3 rounded outline-none focus:ring-1 focus:ring-secondary border-none shadow-sm mb-6"
+            placeholder="****"
+            maxLength={4}
+          />
+          <button 
+            onClick={() => {
+              if (adminPin === "2910") {
+                setIsAuthenticatedAdmin(true);
+              } else {
+                showToast("Incorrect PIN", "error");
+                setAdminPin("");
+              }
+            }}
+            className="w-full bg-on-surface text-surface py-3 uppercase tracking-widest text-xs font-bold hover:bg-secondary transition-colors rounded"
+          >
+            Verify
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-surface text-on-surface text-on-background font-body min-h-screen flex flex-col">
       <header className="fixed top-0 w-full z-50 px-6 md:px-12 py-6 bg-[#fbf9f7]/70 dark:bg-[#303331]/70 backdrop-blur-md flex justify-between items-center max-w-[1920px] mx-auto border-b border-outline-variant/10">
@@ -360,6 +394,7 @@ export default function Admin() {
           <Link href="/" className="font-['Noto_Serif'] italic text-2xl tracking-tighter text-[#303331] dark:text-[#fbf9f7]">AZHAGII</Link>
         </div>
         <div className="flex items-center gap-8">
+          <button onClick={() => setIsAuthenticatedAdmin(false)} className="text-[10px] font-bold uppercase tracking-widest hover:text-secondary">Lock</button>
           <Link href="/account" className="text-[10px] font-bold uppercase tracking-widest hover:text-secondary">Logout</Link>
         </div>
       </header>
@@ -868,6 +903,35 @@ export default function Admin() {
                                 >
                                   <Truck size={16} /> Dispatch Indian Courier
                                 </button>
+
+                                <button 
+                                  onClick={async () => {
+                                    showToast('Pushing to Shiprocket...', 'info');
+                                    try {
+                                      const res = await fetch('/api/shiprocket', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                          orderId: order.$id,
+                                          shippingAddress: addr,
+                                          items: items
+                                        })
+                                      });
+                                      const data = await res.json();
+                                      if (data.success) {
+                                        setTrackingNumber(data.awb_code);
+                                        showToast('Shiprocket Integration Mocked Successfully! AWB populated.', 'success');
+                                      } else {
+                                        showToast('Shiprocket error', 'error');
+                                      }
+                                    } catch (err) {
+                                      showToast('Shiprocket API error', 'error');
+                                    }
+                                  }}
+                                  className="w-full bg-surface-container-low border border-outline-variant/30 text-on-surface py-3 rounded text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-surface-container-high transition-colors mt-2"
+                                >
+                                  <Truck size={16} /> Push to Shiprocket
+                                </button>
                               </div>
                             )}
                           </>
@@ -1182,17 +1246,17 @@ export default function Admin() {
               <div className="space-y-4">
                 <label className="block text-xs font-bold uppercase tracking-widest text-on-surface">Product Images (Max 3) *</label>
                 
-                <div>
-                  <label className="block text-[10px] uppercase tracking-widest text-outline-variant mb-1">Image 1 (Required) *</label>
-                  <input name="image1" type="file" accept="image/*" required className="w-full bg-surface-container-low border-none rounded p-3 text-sm focus:ring-1 focus:ring-secondary outline-none" />
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest block">Media 1 (Primary - Image or Video) *</label>
+                  <input name="image1" type="file" accept="image/*,video/mp4,video/webm" required className="w-full bg-surface-container-low border-none rounded p-3 text-sm focus:ring-1 focus:ring-secondary outline-none" />
                 </div>
-                <div>
-                  <label className="block text-[10px] uppercase tracking-widest text-outline-variant mb-1">Image 2 (Optional)</label>
-                  <input name="image2" type="file" accept="image/*" className="w-full bg-surface-container-low border-none rounded p-3 text-sm focus:ring-1 focus:ring-secondary outline-none" />
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest block">Media 2 (Image or Video)</label>
+                  <input name="image2" type="file" accept="image/*,video/mp4,video/webm" className="w-full bg-surface-container-low border-none rounded p-3 text-sm focus:ring-1 focus:ring-secondary outline-none" />
                 </div>
-                <div>
-                  <label className="block text-[10px] uppercase tracking-widest text-outline-variant mb-1">Image 3 (Optional)</label>
-                  <input name="image3" type="file" accept="image/*" className="w-full bg-surface-container-low border-none rounded p-3 text-sm focus:ring-1 focus:ring-secondary outline-none" />
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest block">Media 3 (Image or Video)</label>
+                  <input name="image3" type="file" accept="image/*,video/mp4,video/webm" className="w-full bg-surface-container-low border-none rounded p-3 text-sm focus:ring-1 focus:ring-secondary outline-none" />
                 </div>
               </div>
 

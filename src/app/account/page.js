@@ -9,7 +9,7 @@ import { getUser, loginWithGoogle, logout } from "@/lib/auth";
 import { account } from "@/lib/appwrite";
 import { useToast } from "@/components/ToastProvider";
 import Link from "next/link";
-import { LayoutDashboard, History, MapPin, Heart, ShieldCheck, LogOut, PlusCircle, Trash2, X, ChevronRight, Settings, UserCircle, Bell, ArrowRight, Plus, Truck, PackageCheck, CheckCircle2 } from 'lucide-react';
+import { LayoutDashboard, History, MapPin, Heart, ShieldCheck, LogOut, PlusCircle, Trash2, X, ChevronRight, Settings, UserCircle, Bell, ArrowRight, Plus, Truck, PackageCheck, CheckCircle2, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppContext } from "@/components/Providers";
 
@@ -28,6 +28,7 @@ export default function Account() {
   const [selectedTrackingOrder, setSelectedTrackingOrder] = useState(null);
   const [preferredSize, setPreferredSize] = useState("");
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [points, setPoints] = useState(0);
   
   // Profile update state
   const [profileName, setProfileName] = useState('');
@@ -122,6 +123,12 @@ export default function Account() {
             if (prefs.addresses) {
               setAddresses(JSON.parse(prefs.addresses));
             }
+            let currentPoints = prefs.points;
+            if (currentPoints === undefined) {
+              currentPoints = 500;
+              await account.updatePrefs({ ...prefs, points: currentPoints });
+            }
+            setPoints(currentPoints);
         } else {
             setUser(null);
         }
@@ -525,9 +532,22 @@ export default function Account() {
                 {/* Overview Tab */}
                 {activeTab === "dashboard" && (
                   <motion.div key="dashboard" initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} exit={{opacity:0, y:-20}} transition={{duration:0.4, ease: [0.16, 1, 0.3, 1]}} className="space-y-12">
-                    <div className="space-y-2">
+                    <div className="space-y-2 mb-8">
                       <h1 className="text-4xl md:text-5xl font-headline tracking-tight text-on-surface mb-2">Overview</h1>
                       <p className="text-on-surface-variant text-sm">Manage your profile, track your orders, and explore your curated wishlist.</p>
+                    </div>
+
+                    {/* Rewards Card */}
+                    <div className="bg-gradient-to-br from-[#7e572e] to-[#5c3e1e] text-[#FAF9F6] p-8 rounded-xl shadow-2xl mb-12 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 p-4 opacity-20">
+                        <Star size={100} />
+                      </div>
+                      <h4 className="font-label text-[10px] uppercase tracking-[0.2em] font-bold mb-2">Atelier Rewards</h4>
+                      <div className="flex items-baseline gap-2 mb-4">
+                        <span className="font-headline text-4xl">{points}</span>
+                        <span className="text-xs uppercase tracking-widest opacity-80">pts</span>
+                      </div>
+                      <p className="text-xs opacity-80">Redeem points at checkout for exclusive discounts.</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

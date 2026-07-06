@@ -4,14 +4,17 @@ import { useState, useEffect } from "react";
 import { Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAppContext } from './Providers';
-
+import { useCurrency } from './CurrencyProvider';
 
 export default function ProductCard({ product, isRecommended, viewMode = "grid" }) {
   const { showToast } = useToast();
   const [isInWishlist, setIsInWishlist] = useState(false);
+  const { formatPrice } = useCurrency();
+  const [isHovered, setIsHovered] = useState(false);
 
-  const imgUrl = Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : product.image;
-  
+  const images = Array.isArray(product.images) ? product.images : [product.image];
+  const videoUrl = images.find(url => url && url.match(/\.(mp4|webm)/i));
+  const imgUrl = images.find(url => url && !url.match(/\.(mp4|webm)/i)) || product.image;
   const checkWishlist = () => {
     const wishlist = JSON.parse(localStorage.getItem('atelier_wishlist') || '[]');
     setIsInWishlist(!!wishlist.find(item => item.id === product.id));
@@ -52,9 +55,27 @@ export default function ProductCard({ product, isRecommended, viewMode = "grid" 
   
   return (
     <div onClick={handleCardClick} className="block w-full text-left">
-      <motion.div whileHover={{ y: -5 }} className={`product-card group cursor-pointer relative ${viewMode === "list" ? "flex flex-row gap-8 items-center bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10" : ""}`}>
+      <motion.div 
+        whileHover={{ y: -5 }} 
+        onHoverStart={() => setIsHovered(true)}
+        onHoverEnd={() => setIsHovered(false)}
+        className={`product-card group cursor-pointer relative ${viewMode === "list" ? "flex flex-row gap-8 items-center bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10" : ""}`}
+      >
         <div className={`relative overflow-hidden bg-surface-container-low rounded-lg ${viewMode === "list" ? "w-48 h-64 flex-shrink-0 mb-0" : "aspect-[3/4] mb-6"}`}>
           <img src={imgUrl} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+          
+          {videoUrl && (
+            <div className={`absolute inset-0 transition-opacity duration-500 ${isHovered ? 'opacity-100 z-0' : 'opacity-0 z-[-1]'}`}>
+              <video 
+                src={videoUrl} 
+                className="w-full h-full object-cover" 
+                autoPlay={isHovered} 
+                loop 
+                muted 
+                playsInline
+              />
+            </div>
+          )}
           
           {/* Stock Badges */}
           {totalInventory === 0 ? (
@@ -77,7 +98,7 @@ export default function ProductCard({ product, isRecommended, viewMode = "grid" 
         <div className={`space-y-2 flex-1`}>
           <div className="flex justify-between items-baseline">
             <h3 className="font-headline text-lg italic text-on-surface">{product.name}</h3>
-            <span className="font-headline text-sm">{product.price}</span>
+            <span className="font-headline text-sm">{formatPrice(String(product.price).replace(/[^0-9.]/g, ''))}</span>
           </div>
           {viewMode === 'list' && (
             <p className="text-outline text-sm mt-4 leading-relaxed line-clamp-3">

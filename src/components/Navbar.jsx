@@ -3,9 +3,11 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { fetchProducts } from "@/lib/catalog";
-import { Home, User, Heart, ShoppingBag, Search, X } from "lucide-react";
+import { Home, User, Heart, ShoppingBag, Search, X, Moon, Sun } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppContext } from './Providers';
+import { useCurrency } from './CurrencyProvider';
+import { useTheme } from "next-themes";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -17,6 +19,11 @@ export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const { theme, setTheme } = useTheme();
+  const { currency, changeCurrency, isLoaded } = useCurrency();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -99,6 +106,26 @@ export default function Navbar() {
           </div>
         </div>
         <div className="flex items-center gap-6">
+          
+          {mounted && isLoaded && (
+            <div className="relative group cursor-pointer">
+              <span className="font-label text-[10px] uppercase font-bold text-on-surface opacity-70 group-hover:opacity-100 transition-opacity p-2">
+                {currency}
+              </span>
+              <div className="absolute top-full right-0 mt-2 bg-surface/90 backdrop-blur-xl border border-outline-variant/20 rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all flex flex-col z-50">
+                {['INR', 'USD', 'EUR', 'GBP'].map(cur => (
+                  <button 
+                    key={cur}
+                    onClick={() => changeCurrency(cur)}
+                    className={`px-4 py-2 text-[10px] font-label font-bold text-left hover:bg-black/5 ${currency === cur ? 'text-secondary' : 'text-on-surface'}`}
+                  >
+                    {cur}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="relative flex items-center">
             <AnimatePresence>
               {isSearchOpen && (
@@ -126,12 +153,21 @@ export default function Navbar() {
           </div>
 
           {pathname === '/account' || pathname === '/admin' ? (
-            <Link href="/" className="opacity-70 hover:opacity-100 transition-opacity"><Home size={20} strokeWidth={1.5} className="text-on-surface" /></Link>
+            <Link href="/" className="opacity-70 hover:opacity-100 transition-opacity p-2"><Home size={20} strokeWidth={1.5} className="text-on-surface" /></Link>
           ) : (
-            <Link href="/account" className="opacity-70 hover:opacity-100 transition-opacity"><User size={20} strokeWidth={1.5} className="text-on-surface" /></Link>
+            <Link href="/account" className="opacity-70 hover:opacity-100 transition-opacity p-2"><User size={20} strokeWidth={1.5} className="text-on-surface" /></Link>
           )}
           
-          <Link href="/account?tab=wishlist" className="relative group cursor-pointer opacity-70 hover:opacity-100 transition-opacity">
+          {mounted && (
+            <button 
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="opacity-70 hover:opacity-100 transition-opacity p-2"
+            >
+              {theme === 'dark' ? <Sun size={20} strokeWidth={1.5} className="text-on-surface" /> : <Moon size={20} strokeWidth={1.5} className="text-on-surface" />}
+            </button>
+          )}
+
+          <Link href="/account?tab=wishlist" className="relative group cursor-pointer opacity-70 hover:opacity-100 transition-opacity p-2">
             <Heart size={20} strokeWidth={1.5} className="text-on-surface" />
             <AnimatePresence>
               {wishlistCount > 0 && (

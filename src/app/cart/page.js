@@ -57,6 +57,8 @@ export default function Checkout() {
   const [couponCode, setCouponCode] = useState("");
   const [discountAmount, setDiscountAmount] = useState(0);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const [usePoints, setUsePoints] = useState(false);
+  const [availablePoints, setAvailablePoints] = useState(0);
 
   
 
@@ -99,6 +101,9 @@ export default function Checkout() {
             handleSelectAddress(addresses[0]);
           }
         }
+        if (prefs.points) {
+          setAvailablePoints(prefs.points);
+        }
       }
     } catch (e) {
       // Guest user or failed to fetch
@@ -110,7 +115,8 @@ export default function Checkout() {
     setShipping({ ...shipping, fullName: addr.fullName, address: addr.address, city: addr.city, postalCode: addr.postalCode });
   };
 
-  const finalTotal = Math.max(0, subtotal - discountAmount);
+  const pointsDiscount = usePoints ? Math.floor(availablePoints / 10) : 0;
+  const finalTotal = Math.max(0, subtotal - discountAmount - pointsDiscount);
 
   const fetchLocation = () => {
     if (!navigator.geolocation) {
@@ -195,6 +201,15 @@ export default function Checkout() {
           product.inventory[item.size] = Math.max(0, currentQty - orderQty);
           await saveProduct(product);
         }
+      }
+      
+      // Points logic
+      if (user) {
+        const prefs = await account.getPrefs();
+        const currentPoints = prefs.points || 0;
+        const earned = Math.floor(finalTotal / 10);
+        const newPoints = usePoints ? (currentPoints - availablePoints + earned) : (currentPoints + earned);
+        await account.updatePrefs({ ...prefs, points: newPoints });
       }
       localStorage.removeItem('atelier_cart');
       window.dispatchEvent(new Event('cartUpdated'));
@@ -472,11 +487,34 @@ export default function Checkout() {
                     <span className="font-headline font-medium text-base">- ₹{discountAmount.toFixed(2)}</span>
                   </div>
                 )}
+                {usePoints && (
+                  <div className="flex justify-between text-[#7e572e]">
+                    <span className="uppercase tracking-wider text-[10px]">Points Redeemed</span>
+                    <span className="font-headline font-medium text-base">- ₹{pointsDiscount.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="pt-6 mt-6 border-t border-outline-variant/10 flex justify-between items-center">
                   <span className="font-bold uppercase tracking-[0.2em] text-xs">Total</span>
                   <span className="font-headline text-3xl">₹{finalTotal.toFixed(2)}</span>
                 </div>
               </div>
+              
+              {availablePoints >= 100 && (
+                <div className="mt-6 p-4 rounded-xl border border-[#7e572e]/30 bg-[#7e572e]/5">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={usePoints} 
+                      onChange={(e) => setUsePoints(e.target.checked)}
+                      className="accent-[#7e572e] w-4 h-4 rounded" 
+                    />
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold uppercase tracking-widest text-[#7e572e]">Redeem Points</span>
+                      <span className="text-[10px] text-on-surface-variant">Use {availablePoints} pts for ₹{Math.floor(availablePoints / 10)} off</span>
+                    </div>
+                  </label>
+                </div>
+              )}
             </div>
           </div>
 

@@ -4,6 +4,8 @@ import { usePathname } from 'next/navigation';
 
 const AppContext = createContext();
 
+import { ThemeProvider } from 'next-themes';
+
 export function Providers({ children }) {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -41,17 +43,19 @@ export function Providers({ children }) {
   };
 
   return (
-    <AppContext.Provider value={{
-      isCartOpen,
-      openCart,
-      closeCart,
-      isProductModalOpen,
-      selectedProduct,
-      openProductModal,
-      closeProductModal
-    }}>
-      {children}
-    </AppContext.Provider>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <AppContext.Provider value={{
+        isCartOpen,
+        openCart,
+        closeCart,
+        isProductModalOpen,
+        selectedProduct,
+        openProductModal,
+        closeProductModal
+      }}>
+        {children}
+      </AppContext.Provider>
+    </ThemeProvider>
   );
 }
 
