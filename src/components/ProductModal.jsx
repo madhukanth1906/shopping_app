@@ -66,6 +66,7 @@ export default function ProductModal() {
   }, [isProductModalOpen, selectedProduct]);
 
   const [zoomStyle, setZoomStyle] = useState({ transformOrigin: 'center', transform: 'scale(1)' });
+  const [imageErrors, setImageErrors] = useState({});
   const handleMouseMove = (e) => {
     const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - left) / width) * 100;
