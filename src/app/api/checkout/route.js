@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { Client, Databases, ID, Permission, Role } from 'node-appwrite';
+import { Client, Databases, ID, Permission, Role, Query } from 'node-appwrite';
 
 const APPWRITE_PROJECT_ID = "6a462ca3002266cef903";
 const APPWRITE_ENDPOINT = "https://sgp.cloud.appwrite.io/v1";
@@ -31,11 +31,20 @@ export async function POST(req) {
         product = await databases.getDocument(DATABASE_ID, PRODUCTS_COLLECTION_ID, item.id);
       } catch (err) {
         if (err.code === 404) {
-          return NextResponse.json({ 
-            error: `Item no longer exists: ${item.name}. Please remove it from your cart.` 
-          }, { status: 400 });
+          // Fallback for older carts that used productId instead of $id
+          const fallback = await databases.listDocuments(DATABASE_ID, PRODUCTS_COLLECTION_ID, [
+            Query.equal('productId', item.id)
+          ]);
+          if (fallback.documents.length > 0) {
+            product = fallback.documents[0];
+          } else {
+            return NextResponse.json({ 
+              error: `Item no longer exists: ${item.name}. Please remove it from your cart.` 
+            }, { status: 400 });
+          }
+        } else {
+          throw err;
         }
-        throw err;
       }
       
       const inventoryArray = product.inventory || [];

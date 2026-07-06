@@ -27,6 +27,7 @@ export async function fetchProducts() {
         const catalog = {};
         for (const doc of response.documents) {
             catalog[doc.productId] = {
+                $id: doc.$id,
                 id: doc.productId,
                 name: doc.name,
                 price: doc.price,
