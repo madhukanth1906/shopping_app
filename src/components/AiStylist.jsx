@@ -48,6 +48,26 @@ export default function AiStylist() {
     }
   };
 
+  const formatMessage = (content) => {
+    return content.split('\n').map((line, i) => {
+      // Handle markdown bullets
+      let displayLine = line;
+      if (displayLine.trim().startsWith('* ')) {
+        displayLine = displayLine.replace('* ', '• ');
+      }
+      
+      return (
+        <span key={i}>
+          {displayLine.split(/(\*\*.*?\*\*)/g).map((part, j) => 
+            part.startsWith('**') && part.endsWith('**') ? 
+              <strong key={j}>{part.slice(2, -2)}</strong> : part
+          )}
+          {i < content.split('\n').length - 1 && <br />}
+        </span>
+      );
+    });
+  };
+
   return (
     <>
       <button 
@@ -84,7 +104,7 @@ export default function AiStylist() {
                     {msg.role === 'user' ? <User size={14} /> : <Bot size={14} />}
                   </div>
                   <div className={`p-3 rounded-xl text-sm ${msg.role === 'user' ? 'bg-secondary/10 text-on-surface rounded-tr-none' : 'bg-surface-container text-on-surface rounded-tl-none'} max-w-[80%]`}>
-                    {msg.content}
+                    {formatMessage(msg.content)}
                   </div>
                 </div>
               ))}

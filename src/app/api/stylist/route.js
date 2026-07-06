@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { databases, DATABASE_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite';
 
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 export async function POST(req) {
   try {
@@ -27,25 +27,40 @@ Keep your responses elegant, concise, and luxurious. Include the Product Name an
 CATALOG:
 ${productsContext}`;
 
-    const apiMessages = [
-      { role: "system", content: systemPrompt },
-      ...messages
-    ];
+    // Convert standard messages to Gemini format
+    const geminiMessages = messages.map(m => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content || "..." }]
+    }));
 
-    const orRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+    const geminiRes = await fetch(url, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "google/gemma-2-9b-it:free",
-        messages: apiMessages,
+        system_instruction: { parts: [{ text: systemPrompt }] },
+        contents: geminiMessages
       })
     });
 
-    const data = await orRes.json();
-    return NextResponse.json(data);
+    const data = await geminiRes.json();
+    console.log("GEMINI RAW RESPONSE:", JSON.stringify(data, null, 2));
+    
+    // Map back to OpenAI format expected by frontend
+    const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I am having trouble finding a recommendation right now.";
+    
+    return NextResponse.json({
+      choices: [
+        {
+          message: {
+            role: "assistant",
+            content: aiText
+          }
+        }
+      ]
+    });
   } catch (error) {
     console.error("AI Stylist Error:", error);
     return NextResponse.json({ error: "Failed to connect to the stylist." }, { status: 500 });
