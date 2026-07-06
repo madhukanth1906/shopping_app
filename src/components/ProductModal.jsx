@@ -121,6 +121,8 @@ export default function ProductModal() {
   const images = Array.isArray(selectedProduct.images) && selectedProduct.images.length > 0 
     ? selectedProduct.images 
     : [selectedProduct.image];
+  const totalInventory = liveStock ? Object.values(liveStock).reduce((sum, qty) => sum + qty, 0) : (selectedProduct?.inventory ? Object.values(selectedProduct.inventory).reduce((sum, qty) => sum + qty, 0) : 0);
+  const isCompletelyOutOfStock = totalInventory <= 0;
 
   const handleAddToCart = () => {
     if (!selectedSize) {
@@ -354,7 +356,7 @@ export default function ProductModal() {
                   </button>
                 </div>
                 <div className="flex gap-3">
-                  {['S', 'M', 'L'].map(size => {
+                  {['XS', 'S', 'M', 'L', 'XL'].map(size => {
                     const stock = liveStock ? liveStock[size] : selectedProduct.inventory?.[size];
                     const isOutOfStock = !stock || stock <= 0;
 
@@ -560,9 +562,14 @@ export default function ProductModal() {
               <div className="flex gap-4">
                 <button 
                   onClick={handleAddToCart}
-                  className="flex-1 py-4 bg-on-surface text-surface uppercase font-label tracking-[0.2em] text-[10px] font-bold rounded hover:bg-secondary transition-all hover:-translate-y-0.5 flex justify-center items-center shadow-lg"
+                  disabled={isCompletelyOutOfStock}
+                  className={`flex-1 py-4 font-label tracking-[0.2em] text-[10px] font-bold rounded flex justify-center items-center shadow-lg transition-all ${
+                    isCompletelyOutOfStock 
+                      ? 'bg-surface-container-low text-outline-variant cursor-not-allowed opacity-70 border border-outline-variant/30' 
+                      : 'bg-on-surface text-surface uppercase hover:bg-secondary hover:-translate-y-0.5'
+                  }`}
                 >
-                  ADD TO SHOPPING BAG
+                  {isCompletelyOutOfStock ? 'OUT OF STOCK' : 'ADD TO SHOPPING BAG'}
                 </button>
                 <button 
                   onClick={handleWishlist}

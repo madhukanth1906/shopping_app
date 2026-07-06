@@ -35,7 +35,9 @@ export async function fetchProducts() {
                 images: doc.images || [doc.image],
                 desc: doc.desc,
                 category: doc.category || 'Fashion Dress',
-                inventory: doc.inventory ? JSON.parse(doc.inventory) : {},
+                inventory: Array.isArray(doc.inventory) 
+                    ? doc.inventory.reduce((acc, curr) => { const [s, q] = curr.split(':'); acc[s] = parseInt(q); return acc; }, {}) 
+                    : (doc.inventory ? JSON.parse(doc.inventory) : {}),
                 occasion: doc.occasion || '',
                 color: doc.color || '',
                 fabric: doc.fabric || '',
@@ -67,7 +69,7 @@ export async function saveProduct(product) {
             images: product.images,
             desc: product.desc,
             category: product.category || 'Fashion Dress',
-            inventory: JSON.stringify(product.inventory || {}),
+            inventory: Object.entries(product.inventory || {}).map(([size, qty]) => `${size}:${qty}`),
             occasion: product.occasion || '',
             color: product.color || '',
             fabric: product.fabric || ''
