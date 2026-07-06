@@ -207,31 +207,26 @@ export default function Checkout() {
   const handlePlaceOrder = async () => {
     setIsSubmitting(true);
     try {
-      // User is already verified via useEffect
-      
       const orderPayload = {
         userId: user.$id,
-        items: JSON.stringify(cartItems),
-        total: finalTotal,
-        status: 'Pending',
-        shippingAddress: JSON.stringify(shipping)
+        cartItems: cartItems,
+        finalTotal: finalTotal,
+        shippingAddress: shipping
       };
       
-      await saveOrder(orderPayload);
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderPayload)
+      });
       
-      // Reduce inventory
-      const allProducts = await fetchProducts();
-      for (const item of cartItems) {
-        const product = allProducts[item.id];
-        if (product && product.inventory && product.inventory[item.size] !== undefined) {
-          const currentQty = parseInt(product.inventory[item.size]) || 0;
-          const orderQty = parseInt(item.quantity) || 1;
-          product.inventory[item.size] = Math.max(0, currentQty - orderQty);
-          await saveProduct(product);
-        }
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to place order');
       }
-      
-      // Points logic
+
+      // Points logic (still client side for ease, but ideally server side too)
       if (user) {
         const prefs = await account.getPrefs();
         const currentPoints = prefs.points || 0;
@@ -239,18 +234,18 @@ export default function Checkout() {
         const newPoints = usePoints ? (currentPoints - availablePoints + earned) : (currentPoints + earned);
         await account.updatePrefs({ ...prefs, points: newPoints });
       }
+
       localStorage.removeItem('atelier_cart');
       window.dispatchEvent(new Event('cartUpdated'));
       
       setOrderComplete(true);
     } catch (err) {
       console.error(err);
-      showToast("Failed to place order.", "error");
+      showToast(err.message || "Failed to place order.", "error");
     } finally {
       setIsSubmitting(false);
     }
   };
-
   if (orderComplete) {
     return <OrderSuccess orderDetails={{ total: finalTotal, shippingAddress: shipping }} />;
   }
