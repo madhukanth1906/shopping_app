@@ -4,12 +4,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
 import { useAppContext } from './Providers';
 import { useRouter } from 'next/navigation';
+import { fetchCoupons } from '@/lib/catalog';
+import { useToast } from './ToastProvider';
 
 export default function CartDrawer() {
   const { isCartOpen, closeCart } = useAppContext();
+  const { showToast } = useToast();
   const [cartItems, setCartItems] = useState([]);
   const [promoCode, setPromoCode] = useState('');
   const [appliedDiscount, setAppliedDiscount] = useState(0);
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [imageErrors, setImageErrors] = useState({});
   const router = useRouter();
 
   const updateCartState = () => {
@@ -45,12 +50,25 @@ export default function CartDrawer() {
     updateLocalStorage(newCart);
   };
 
-  const handleApplyPromo = (e) => {
+  const handleApplyPromo = async (e) => {
     e.preventDefault();
-    if (promoCode.toUpperCase() === 'AZHAGII10') {
-      setAppliedDiscount(0.1);
-    } else {
-      setAppliedDiscount(0);
+    if (!promoCode.trim()) return;
+    
+    try {
+      const coupons = await fetchCoupons();
+      const validCoupon = coupons.find(c => c.code.toUpperCase() === promoCode.toUpperCase());
+      
+      if (validCoupon) {
+        setAppliedDiscount(validCoupon.discount / 100);
+        setAppliedCoupon(validCoupon);
+        showToast(`Coupon applied! ${validCoupon.discount}% off`, 'success');
+      } else {
+        setAppliedDiscount(0);
+        setAppliedCoupon(null);
+        showToast('Invalid coupon code', 'error');
+      }
+    } catch (err) {
+      showToast('Error applying coupon', 'error');
     }
   };
 
@@ -102,8 +120,12 @@ export default function CartDrawer() {
                       transition={{ delay: index * 0.1 }}
                       className="flex gap-4 group"
                     >
-                      <div className="w-24 aspect-[3/4] bg-surface/50 rounded overflow-hidden">
-                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                      <div className="w-24 aspect-[3/4] bg-surface/50 rounded overflow-hidden flex items-center justify-center">
+                        {item.image && (item.image.match(/\.(mp4|webm)/i) || imageErrors[item.id]) ? (
+                          <video src={item.image} className="w-full h-full object-cover" loop muted playsInline />
+                        ) : (
+                          <img src={item.image} alt={item.name} className="w-full h-full object-cover" onError={() => setImageErrors(prev => ({ ...prev, [item.id]: true }))} />
+                        )}
                       </div>
                       <div className="flex-1 flex flex-col justify-between py-1">
                         <div>
@@ -149,7 +171,7 @@ export default function CartDrawer() {
                   </div>
                   {appliedDiscount > 0 && (
                     <div className="flex justify-between text-secondary">
-                      <span>Discount (AZHAGII10)</span>
+                      <span>Discount ({appliedCoupon ? appliedCoupon.code : 'PROMO'})</span>
                       <span>-₹{discountAmount.toFixed(2)}</span>
                     </div>
                   )}

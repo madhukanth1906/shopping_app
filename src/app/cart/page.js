@@ -35,6 +35,7 @@ export default function Checkout() {
   const [subtotal, setSubtotal] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
+  const [imageErrors, setImageErrors] = useState({});
   
   // Checkout Form State
   const [shipping, setShipping] = useState({
@@ -123,8 +124,15 @@ export default function Checkout() {
     if (!couponCode) return;
     setIsApplyingCoupon(true);
     try {
-      const coupon = await validateCoupon(couponCode, subtotal);
-      if (coupon) {
+      const result = await validateCoupon(couponCode);
+      if (result.valid) {
+        const coupon = result.coupon;
+        if (coupon.minPrice && subtotal < coupon.minPrice) {
+          setDiscountAmount(0);
+          showToast(`Minimum order amount of ₹${coupon.minPrice} required.`, 'error');
+          return;
+        }
+        
         let discount = 0;
         if (coupon.type === 'percentage') {
           discount = (subtotal * coupon.discountAmount) / 100;
@@ -136,7 +144,7 @@ export default function Checkout() {
         showToast('Coupon applied successfully!', 'success');
       } else {
         setDiscountAmount(0);
-        showToast('Invalid or expired coupon, or minimum price not met.', 'error');
+        showToast(result.message || 'Invalid or expired coupon.', 'error');
       }
     } catch (err) {
       setDiscountAmount(0);
@@ -428,8 +436,12 @@ export default function Checkout() {
                     <div className="space-y-6">
                       {cartItems.map((item, i) => (
                         <div key={i} className="flex gap-4">
-                          <div className="w-16 h-24 bg-surface-container rounded shrink-0">
-                            <img className="w-full h-full object-cover rounded" src={item.image} alt={item.name} />
+                          <div className="w-16 h-24 bg-surface-container rounded shrink-0 flex items-center justify-center overflow-hidden">
+                            {item.image && (item.image.match(/\.(mp4|webm)/i) || imageErrors[item.id]) ? (
+                              <video src={item.image} className="w-full h-full object-cover" loop muted playsInline />
+                            ) : (
+                              <img className="w-full h-full object-cover rounded" src={item.image} alt={item.name} onError={() => setImageErrors(prev => ({ ...prev, [item.id]: true }))} />
+                            )}
                           </div>
                           <div className="flex-1 flex flex-col justify-center">
                             <p className="font-bold text-xs uppercase tracking-widest">{item.name}</p>

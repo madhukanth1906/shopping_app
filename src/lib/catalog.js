@@ -115,6 +115,19 @@ export async function fetchReviews(productId) {
     }
 }
 
+export async function fetchCoupons() {
+    try {
+        const response = await databases.listDocuments(
+            DATABASE_ID,
+            COUPONS_COLLECTION_ID
+        );
+        return response.documents;
+    } catch (error) {
+        console.error("Error fetching coupons:", error);
+        return [];
+    }
+}
+
 export async function fetchAllReviews() {
     try {
         const response = await databases.listDocuments(

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useToast } from "./ToastProvider";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAppContext } from './Providers';
@@ -12,6 +12,17 @@ export default function ProductCard({ product, isRecommended, viewMode = "grid" 
   const { formatPrice } = useCurrency();
   const [isHovered, setIsHovered] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      if (isHovered) {
+        videoRef.current.play().catch(() => {});
+      } else {
+        videoRef.current.pause();
+      }
+    }
+  }, [isHovered]);
 
   const images = Array.isArray(product.images) ? product.images : [product.image];
   const videoUrl = images.find(url => url && url.match(/\.(mp4|webm)/i));
@@ -69,9 +80,10 @@ export default function ProductCard({ product, isRecommended, viewMode = "grid" 
         <div className={`relative overflow-hidden bg-surface-container-low rounded-lg ${viewMode === "list" ? "w-48 h-64 flex-shrink-0 mb-0" : "aspect-[3/4] mb-6"}`}>
           {isVideoOnly ? (
             <video 
+              ref={videoRef}
               src={videoUrl || imgUrl} 
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
-              autoPlay={isHovered} loop muted playsInline
+              loop muted playsInline
             />
           ) : (
             <>
@@ -79,9 +91,9 @@ export default function ProductCard({ product, isRecommended, viewMode = "grid" 
               {videoUrl && (
                 <div className={`absolute inset-0 transition-opacity duration-500 ${isHovered ? 'opacity-100 z-0' : 'opacity-0 z-[-1]'}`}>
                   <video 
+                    ref={videoRef}
                     src={videoUrl} 
                     className="w-full h-full object-cover" 
-                    autoPlay={isHovered} 
                     loop 
                     muted 
                     playsInline
