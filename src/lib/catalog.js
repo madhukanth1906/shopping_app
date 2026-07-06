@@ -1,4 +1,21 @@
-import { databases, DATABASE_ID, PRODUCTS_COLLECTION_ID, REVIEWS_COLLECTION_ID, ORDERS_COLLECTION_ID, COUPONS_COLLECTION_ID, ID, Query } from "./appwrite";
+import { databases, account, DATABASE_ID, PRODUCTS_COLLECTION_ID, REVIEWS_COLLECTION_ID, ORDERS_COLLECTION_ID, COUPONS_COLLECTION_ID, ID, Query } from "./appwrite";
+
+async function callAdminApi(action, payload) {
+    try {
+        const { jwt } = await account.createJWT();
+        const res = await fetch('/api/admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action, payload, jwt })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || `Failed to ${action}`);
+        return data.data;
+    } catch (error) {
+        console.error(`Admin API error [${action}]:`, error);
+        throw error;
+    }
+}
 
 export async function fetchProducts() {
     try {
@@ -34,56 +51,32 @@ export async function fetchProducts() {
 
 export async function saveProduct(product) {
     try {
-        // Check if product already exists
+        // Fetch existing first to check if we are updating or creating
         const response = await databases.listDocuments(
             DATABASE_ID,
             PRODUCTS_COLLECTION_ID
         );
-        
         const existingDoc = response.documents.find(doc => doc.productId === product.id);
         
+        const payloadData = {
+            productId: product.id,
+            name: product.name,
+            price: product.price,
+            size: product.size || '',
+            image: product.image,
+            images: product.images,
+            desc: product.desc,
+            category: product.category || 'Fashion Dress',
+            inventory: JSON.stringify(product.inventory || {}),
+            occasion: product.occasion || '',
+            color: product.color || '',
+            fabric: product.fabric || ''
+        };
+
         if (existingDoc) {
-            // Update existing product
-            await databases.updateDocument(
-                DATABASE_ID,
-                PRODUCTS_COLLECTION_ID,
-                existingDoc.$id,
-                {
-                    productId: product.id,
-                    name: product.name,
-                    price: product.price,
-                    size: product.size || '',
-                    image: product.image,
-                    images: product.images,
-                    desc: product.desc,
-                    category: product.category || 'Fashion Dress',
-                    inventory: JSON.stringify(product.inventory || {}),
-                    occasion: product.occasion || '',
-                    color: product.color || '',
-                    fabric: product.fabric || ''
-                }
-            );
+            await callAdminApi('saveProduct', { id: existingDoc.$id, data: payloadData });
         } else {
-            // Create new product
-            await databases.createDocument(
-                DATABASE_ID,
-                PRODUCTS_COLLECTION_ID,
-                ID.unique(),
-                {
-                    productId: product.id,
-                    name: product.name,
-                    price: product.price,
-                    size: product.size || '',
-                    image: product.image,
-                    images: product.images,
-                    desc: product.desc,
-                    category: product.category || 'Fashion Dress',
-                    inventory: JSON.stringify(product.inventory || {}),
-                    occasion: product.occasion || '',
-                    color: product.color || '',
-                    fabric: product.fabric || ''
-                }
-            );
+            await callAdminApi('saveProduct', { data: payloadData });
         }
         return true;
     } catch (error) {
@@ -100,11 +93,7 @@ export async function deleteProduct(productId) {
         );
         const existingDoc = response.documents.find(doc => doc.productId === productId);
         if (existingDoc) {
-            await databases.deleteDocument(
-                DATABASE_ID,
-                PRODUCTS_COLLECTION_ID,
-                existingDoc.$id
-            );
+            await callAdminApi('deleteProduct', { id: existingDoc.$id });
         }
     } catch (error) {
         console.error('Error deleting product:', error);
@@ -235,12 +224,11 @@ export async function fetchUserOrders(userId) {
 
 export async function updateOrderStatus(orderId, status, updatedShippingAddress = null) {
     try {
-        return await databases.updateDocument(
-            DATABASE_ID,
-            ORDERS_COLLECTION_ID,
+        return await callAdminApi('updateOrderStatus', {
             orderId,
-            updatedShippingAddress ? { status, shippingAddress: updatedShippingAddress } : { status }
-        );
+            status,
+            updatedShippingAddress
+        });
     } catch (error) {
         console.error("Error updating order status:", error);
         throw error;
@@ -249,15 +237,15 @@ export async function updateOrderStatus(orderId, status, updatedShippingAddress 
 
 export async function cancelOrder(orderId, status, updatedShippingAddress) {
     try {
-        return await databases.updateDocument(
-            DATABASE_ID,
-            ORDERS_COLLECTION_ID,
-            orderId,
-            { 
-                status,
-                shippingAddress: updatedShippingAddress
-            }
-        );
+        const { jwt } = await account.createJWT();
+        const res = await fetch('/api/orders/cancel', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId, status, updatedShippingAddress, jwt })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to cancel order');
+        return data.data;
     } catch (error) {
         console.error("Error cancelling order:", error);
         throw error;
@@ -280,19 +268,14 @@ export async function fetchCoupons() {
 
 export async function saveCoupon(couponData) {
     try {
-        return await databases.createDocument(
-            DATABASE_ID,
-            COUPONS_COLLECTION_ID,
-            ID.unique(),
-            {
-                code: couponData.code,
-                discountAmount: couponData.discountAmount,
-                minPrice: couponData.minPrice,
-                expiryDate: couponData.expiryDate,
-                type: couponData.type || 'fixed',
-                maxDiscount: couponData.maxDiscount || null
-            }
-        );
+        return await callAdminApi('saveCoupon', {
+            code: couponData.code,
+            discountAmount: couponData.discountAmount,
+            minPrice: couponData.minPrice,
+            expiryDate: couponData.expiryDate,
+            type: couponData.type || 'fixed',
+            maxDiscount: couponData.maxDiscount || null
+        });
     } catch (error) {
         console.error("Error saving coupon:", error);
         throw error;
@@ -301,11 +284,7 @@ export async function saveCoupon(couponData) {
 
 export async function deleteCoupon(couponId) {
     try {
-        return await databases.deleteDocument(
-            DATABASE_ID,
-            COUPONS_COLLECTION_ID,
-            couponId
-        );
+        return await callAdminApi('deleteCoupon', { id: couponId });
     } catch (error) {
         console.error("Error deleting coupon:", error);
         throw error;
