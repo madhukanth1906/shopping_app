@@ -121,68 +121,11 @@ export default function Home() {
             <div className="flex gap-8 overflow-x-auto hide-scrollbar pb-8 snap-x">
               {loading && <p className="text-outline text-sm">Loading products...</p>}
               {!loading && featured.length === 0 && <p className="text-outline text-sm">No products available at the moment. Please check back later!</p>}
-              {!loading && featured.map(([id, product]) => {
-                const imgUrl = Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : product.image;
-
-                const handleWishlist = (e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  const wishlist = JSON.parse(localStorage.getItem('atelier_wishlist') || '[]');
-                  if (!wishlist.find(item => item.id === product.id)) {
-                    wishlist.push({ id: product.id, name: product.name, price: product.price, image: imgUrl });
-                    localStorage.setItem('atelier_wishlist', JSON.stringify(wishlist));
-                    showToast(`${product.name} added to wishlist!`, "success");
-                  } else {
-                    showToast(`${product.name} is already in your wishlist.`, "error");
-                  }
-                };
-
-                return (
-                  <div key={id} className="min-w-[320px] w-[320px] max-w-[320px] snap-start group relative cursor-pointer" onClick={() => openProductModal(product)}>
-                    <div className="relative aspect-[3/4] mb-6 overflow-hidden bg-surface/50 rounded-lg shadow-sm">
-                      <img
-                        alt={product.name}
-                        src={imgUrl}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                        loading="lazy"
-                      />
-
-                      {/* Quick Shop slide-up Overlay */}
-                      <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/50 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); openProductModal(product); }}
-                          className="w-full py-3.5 bg-on-surface text-surface font-label text-[10px] uppercase tracking-widest rounded-full hover:bg-secondary transition-colors duration-300 text-center font-semibold"
-                        >
-                          Quick Add
-                        </button>
-                      </div>
-
-                      {/* Top corner pills */}
-                      {product.newArrival && (
-                        <span className="absolute top-4 left-4 font-label text-[10px] uppercase tracking-widest bg-surface/85 backdrop-blur px-3 py-1 text-on-surface font-semibold shadow-sm">
-                          New Arrival
-                        </span>
-                      )}
-
-                      <button
-                        onClick={handleWishlist}
-                        className="absolute top-4 right-4 p-2 bg-surface/80 backdrop-blur-sm rounded-full text-on-surface transition-all shadow-sm hover:scale-110 active:scale-95 duration-200"
-                      >
-                        <Heart size={18} strokeWidth={1.5} />
-                      </button>
-                    </div>
-
-                    {/* Product details */}
-                    <div className="space-y-1">
-                      <p className="font-label text-[10px] uppercase tracking-widest text-outline">{product.category || 'Collection'}</p>
-                      <div className="flex justify-between items-baseline">
-                        <h3 className="font-headline text-lg italic text-on-surface truncate pr-2">{product.name}</h3>
-                        <span className="font-headline text-sm font-semibold whitespace-nowrap">{product.price}</span>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
+              {!loading && featured.map(([id, product]) => (
+                <div key={id} className="min-w-[320px] w-[320px] max-w-[320px] snap-start">
+                  <ProductCard product={product} />
+                </div>
+              ))}
             </div>
           </div>
         </section>
