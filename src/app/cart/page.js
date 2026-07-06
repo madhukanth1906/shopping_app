@@ -118,6 +118,34 @@ export default function Checkout() {
   const pointsDiscount = usePoints ? Math.floor(availablePoints / 10) : 0;
   const finalTotal = Math.max(0, subtotal - discountAmount - pointsDiscount);
 
+  const handleApplyCoupon = async (e) => {
+    e.preventDefault();
+    if (!couponCode) return;
+    setIsApplyingCoupon(true);
+    try {
+      const coupon = await validateCoupon(couponCode, subtotal);
+      if (coupon) {
+        let discount = 0;
+        if (coupon.type === 'percentage') {
+          discount = (subtotal * coupon.discountAmount) / 100;
+          if (coupon.maxDiscount) discount = Math.min(discount, coupon.maxDiscount);
+        } else {
+          discount = coupon.discountAmount;
+        }
+        setDiscountAmount(discount);
+        showToast('Coupon applied successfully!', 'success');
+      } else {
+        setDiscountAmount(0);
+        showToast('Invalid or expired coupon, or minimum price not met.', 'error');
+      }
+    } catch (err) {
+      setDiscountAmount(0);
+      showToast('Error validating coupon.', 'error');
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  };
+
   const fetchLocation = () => {
     if (!navigator.geolocation) {
       showToast("Geolocation is not supported by your browser.", "error");
@@ -497,6 +525,25 @@ export default function Checkout() {
                   <span className="font-bold uppercase tracking-[0.2em] text-xs">Total</span>
                   <span className="font-headline text-3xl">₹{finalTotal.toFixed(2)}</span>
                 </div>
+              </div>
+              
+              <div className="mt-8 border-t border-outline-variant/10 pt-6">
+                <form onSubmit={handleApplyCoupon} className="flex gap-2">
+                  <input 
+                    type="text" 
+                    value={couponCode} 
+                    onChange={e => setCouponCode(e.target.value.toUpperCase())} 
+                    placeholder="PROMO CODE" 
+                    className="flex-1 bg-surface border border-outline-variant/30 rounded px-4 py-3 text-xs tracking-widest uppercase outline-none focus:border-on-surface"
+                  />
+                  <button 
+                    type="submit" 
+                    disabled={isApplyingCoupon || !couponCode}
+                    className="bg-on-surface text-surface px-6 py-3 rounded text-[10px] font-bold uppercase tracking-widest hover:bg-secondary disabled:opacity-50 transition-colors"
+                  >
+                    Apply
+                  </button>
+                </form>
               </div>
               
               {availablePoints >= 100 && (

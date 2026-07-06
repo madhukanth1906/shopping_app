@@ -107,25 +107,6 @@ export default function Navbar() {
         </div>
         <div className="flex items-center gap-6">
           
-          {mounted && isLoaded && (
-            <div className="relative group cursor-pointer">
-              <span className="font-label text-[10px] uppercase font-bold text-on-surface opacity-70 group-hover:opacity-100 transition-opacity p-2">
-                {currency}
-              </span>
-              <div className="absolute top-full right-0 mt-2 bg-surface/90 backdrop-blur-xl border border-outline-variant/20 rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all flex flex-col z-50">
-                {['INR', 'USD', 'EUR', 'GBP'].map(cur => (
-                  <button 
-                    key={cur}
-                    onClick={() => changeCurrency(cur)}
-                    className={`px-4 py-2 text-[10px] font-label font-bold text-left hover:bg-black/5 ${currency === cur ? 'text-secondary' : 'text-on-surface'}`}
-                  >
-                    {cur}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
           <div className="relative flex items-center">
             <AnimatePresence>
               {isSearchOpen && (
