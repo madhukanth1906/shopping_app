@@ -26,6 +26,7 @@ export default function Admin() {
   const [dismissedAlerts, setDismissedAlerts] = useState([]);
   const [adminPin, setAdminPin] = useState("");
   const [isAuthenticatedAdmin, setIsAuthenticatedAdmin] = useState(false);
+  const [pinAttempts, setPinAttempts] = useState(0);
 
   const [products, setProducts] = useState({});
   const [orders, setOrders] = useState([]);
@@ -374,16 +375,25 @@ export default function Admin() {
           />
           <button 
             onClick={() => {
+              if (pinAttempts >= 3) return;
               if (adminPin === "2910") {
                 setIsAuthenticatedAdmin(true);
+                setPinAttempts(0);
               } else {
-                showToast("Incorrect PIN", "error");
+                const newAttempts = pinAttempts + 1;
+                setPinAttempts(newAttempts);
+                if (newAttempts >= 3) {
+                  showToast("Maximum attempts reached. Access locked.", "error");
+                } else {
+                  showToast(`Incorrect PIN. ${3 - newAttempts} attempts remaining.`, "error");
+                }
                 setAdminPin("");
               }
             }}
-            className="w-full bg-on-surface text-surface py-3 uppercase tracking-widest text-xs font-bold hover:bg-secondary transition-colors rounded"
+            disabled={pinAttempts >= 3}
+            className="w-full bg-on-surface text-surface py-3 uppercase tracking-widest text-xs font-bold hover:bg-secondary transition-colors rounded disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Verify
+            {pinAttempts >= 3 ? 'Locked' : 'Verify'}
           </button>
         </div>
       </div>

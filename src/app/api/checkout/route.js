@@ -26,7 +26,18 @@ export async function POST(req) {
     // 1. Fetch current stock for all items
     const productsToUpdate = [];
     for (const item of cartItems) {
-      const product = await databases.getDocument(DATABASE_ID, PRODUCTS_COLLECTION_ID, item.id);
+      let product;
+      try {
+        product = await databases.getDocument(DATABASE_ID, PRODUCTS_COLLECTION_ID, item.id);
+      } catch (err) {
+        if (err.code === 404) {
+          return NextResponse.json({ 
+            error: `Item no longer exists: ${item.name}. Please remove it from your cart.` 
+          }, { status: 400 });
+        }
+        throw err;
+      }
+      
       const inventoryArray = product.inventory || [];
       const inventoryMap = inventoryArray.reduce((acc, curr) => {
         const [size, qty] = curr.split(':');
