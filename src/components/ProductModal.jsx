@@ -23,6 +23,7 @@ export default function ProductModal() {
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [isSizeCalcOpen, setIsSizeCalcOpen] = useState(false);
   const [userAccount, setUserAccount] = useState(null);
+  const [liveStock, setLiveStock] = useState(null);
   const { showToast } = useToast();
   const { formatPrice } = useCurrency();
 
@@ -48,12 +49,21 @@ export default function ProductModal() {
       // eslint-disable-next-line
       setActiveTab('details');
       checkWishlist();
+      setLiveStock(selectedProduct.inventory || {});
       
       const productId = selectedProduct.$id || selectedProduct.id;
       fetchReviews(productId).then(setReviews);
 
       fetchProducts().then(allProducts => {
         const prodArray = Object.values(allProducts || {});
+        const fresh = prodArray.find(p => (p.$id || p.id) === productId);
+        if (!fresh) {
+           showToast("This product is no longer available.", "error");
+           closeProductModal();
+           return;
+        }
+        setLiveStock(fresh.inventory || {});
+
         const cat = selectedProduct.category;
         if (cat) {
           setRecommendations(prodArray.filter(p => p.category === cat && (p.$id || p.id) !== productId).slice(0, 3));
@@ -122,16 +132,28 @@ export default function ProductModal() {
     const cart = JSON.parse(localStorage.getItem('atelier_cart') || '[]');
     const existing = cart.find(item => item.id === selectedProduct.id && item.size === selectedSize);
     
+    const currentInventory = liveStock || selectedProduct.inventory || {};
+    const maxQty = currentInventory[selectedSize] || 0;
+
     if (existing) {
+      if (existing.quantity >= maxQty) {
+        showToast("Maximum available stock reached.", "error");
+        return;
+      }
       existing.quantity += 1;
     } else {
+      if (maxQty <= 0) {
+        showToast("Item is out of stock.", "error");
+        return;
+      }
       cart.push({
         id: selectedProduct.id,
         name: selectedProduct.name,
         price: selectedProduct.price,
         image: images[0],
         size: selectedSize,
-        quantity: 1
+        quantity: 1,
+        maxQuantity: maxQty
       });
     }
     
@@ -333,8 +355,8 @@ export default function ProductModal() {
                 </div>
                 <div className="flex gap-3">
                   {['S', 'M', 'L'].map(size => {
-                    const stock = selectedProduct.inventory?.[size];
-                    const isOutOfStock = stock === 0;
+                    const stock = liveStock ? liveStock[size] : selectedProduct.inventory?.[size];
+                    const isOutOfStock = !stock || stock <= 0;
 
                     return (
                       <button 

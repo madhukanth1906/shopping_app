@@ -9,7 +9,7 @@ const ORDERS_COLLECTION_ID = "6a475366000a0609c90a";
 
 export async function POST(req) {
   try {
-    const { userId, cartItems, finalTotal, shippingAddress } = await req.json();
+    const { userId, cartItems, finalTotal, shippingAddress, appliedCouponId } = await req.json();
 
     if (!userId || !cartItems || cartItems.length === 0) {
       return NextResponse.json({ error: "Invalid order data" }, { status: 400 });
@@ -27,8 +27,14 @@ export async function POST(req) {
     const productsToUpdate = [];
     for (const item of cartItems) {
       const product = await databases.getDocument(DATABASE_ID, PRODUCTS_COLLECTION_ID, item.id);
-      
-      const currentQty = parseInt(product.inventory?.[item.size]) || 0;
+      const inventoryArray = product.inventory || [];
+      const inventoryMap = inventoryArray.reduce((acc, curr) => {
+        const [size, qty] = curr.split(':');
+        acc[size] = parseInt(qty);
+        return acc;
+      }, {});
+
+      const currentQty = inventoryMap[item.size] || 0;
       const orderQty = parseInt(item.quantity) || 1;
 
       if (currentQty < orderQty) {
@@ -37,13 +43,14 @@ export async function POST(req) {
         }, { status: 400 });
       }
 
-      // Prepare updated inventory
-      const updatedInventory = { ...product.inventory };
-      updatedInventory[item.size] = currentQty - orderQty;
+      inventoryMap[item.size] = currentQty - orderQty;
+
+      // Convert back to array of strings for Appwrite
+      const updatedInventoryArray = Object.entries(inventoryMap).map(([size, qty]) => `${size}:${qty}`);
 
       productsToUpdate.push({
         id: product.$id,
-        inventory: updatedInventory
+        inventory: updatedInventoryArray
       });
     }
 
@@ -73,6 +80,14 @@ export async function POST(req) {
         Permission.read(Role.user(userId))
       ]
     );
+
+    if (appliedCouponId) {
+      const COUPONS_COLLECTION_ID = "6a4759aa001f2ff1b886";
+      const coupon = await databases.getDocument(DATABASE_ID, COUPONS_COLLECTION_ID, appliedCouponId);
+      await databases.updateDocument(DATABASE_ID, COUPONS_COLLECTION_ID, appliedCouponId, {
+        usedCount: (coupon.usedCount || 0) + 1
+      });
+    }
 
     return NextResponse.json({ success: true, order: newOrder });
 

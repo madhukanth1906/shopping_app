@@ -1033,7 +1033,9 @@ export default function Admin() {
                               ? `Discount: ${coupon.discountAmount}% (Max ₹${coupon.maxDiscount}) | Min Price: ₹${coupon.minPrice}`
                               : `Discount: ₹${coupon.discountAmount} | Min Price: ₹${coupon.minPrice}`}
                           </p>
-                          <p className="text-xs text-outline mt-1">Expires: {new Date(coupon.expiryDate).toLocaleDateString()}</p>
+                          <p className="text-xs text-outline mt-1">
+                            Expires: {new Date(coupon.expiryDate).toLocaleDateString()} | Uses: {coupon.usedCount || 0} / {coupon.usageLimit > 0 ? coupon.usageLimit : 'Unlimited'}
+                          </p>
                         </div>
                         <div className="flex items-center gap-4">
                           {isExpired ? (
@@ -1295,7 +1297,8 @@ export default function Admin() {
                   minPrice: parseFloat(formData.get('minPrice')),
                   expiryDate: formData.get('expiryDate'),
                   type: couponType,
-                  maxDiscount: couponType === 'percentage' ? parseFloat(formData.get('maxDiscount')) : null
+                  maxDiscount: couponType === 'percentage' ? parseFloat(formData.get('maxDiscount')) : null,
+                  usageLimit: formData.get('usageLimit') ? parseInt(formData.get('usageLimit')) : 0
                 });
                 setIsCouponModalOpen(false);
                 loadData();
@@ -1335,9 +1338,15 @@ export default function Admin() {
                   </div>
                 )}
               </div>
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-widest text-on-surface mb-2">Expiry Date *</label>
-                <input name="expiryDate" type="datetime-local" required className="w-full bg-surface-container-low border-none rounded p-3 text-sm focus:ring-1 focus:ring-secondary outline-none" />
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-on-surface mb-2">Usage Limit (Total)</label>
+                  <input name="usageLimit" type="number" min="0" placeholder="0 for unlimited" className="w-full bg-surface-container-low border-none rounded p-3 text-sm focus:ring-1 focus:ring-secondary outline-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-on-surface mb-2">Expiry Date *</label>
+                  <input name="expiryDate" type="datetime-local" required className="w-full bg-surface-container-low border-none rounded p-3 text-sm focus:ring-1 focus:ring-secondary outline-none" />
+                </div>
               </div>
 
               <div className="pt-4 flex justify-end gap-4">

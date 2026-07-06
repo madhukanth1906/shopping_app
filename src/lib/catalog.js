@@ -275,7 +275,8 @@ export async function saveCoupon(couponData) {
             minPrice: couponData.minPrice,
             expiryDate: couponData.expiryDate,
             type: couponData.type || 'fixed',
-            maxDiscount: couponData.maxDiscount || null
+            maxDiscount: couponData.maxDiscount || null,
+            usageLimit: couponData.usageLimit ? parseInt(couponData.usageLimit) : 0
         });
     } catch (error) {
         console.error("Error saving coupon:", error);
@@ -305,6 +306,9 @@ export async function validateCoupon(code) {
         const coupon = response.documents[0];
         if (new Date(coupon.expiryDate) < new Date()) {
             return { valid: false, message: 'Coupon has expired.' };
+        }
+        if (coupon.usageLimit > 0 && coupon.usedCount >= coupon.usageLimit) {
+            return { valid: false, message: 'Coupon usage limit has been reached.' };
         }
         return { valid: true, coupon };
     } catch (error) {

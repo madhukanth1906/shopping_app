@@ -5,6 +5,7 @@ import { Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAppContext } from './Providers';
 import { useCurrency } from './CurrencyProvider';
+import { useCachedVideo } from '@/hooks/useCachedVideo';
 
 export default function ProductCard({ product, isRecommended, viewMode = "grid" }) {
   const { showToast } = useToast();
@@ -28,6 +29,9 @@ export default function ProductCard({ product, isRecommended, viewMode = "grid" 
   const videoUrl = images.find(url => url && url.match(/\.(mp4|webm)/i));
   const staticImgUrl = images.find(url => url && !url.match(/\.(mp4|webm)/i));
   
+  // Cache the video explicitly when hovered, allowing instant reload next time
+  const cachedVideoUrl = useCachedVideo(videoUrl, isHovered);
+
   // If the image fails to load, it might be an older video uploaded before we added &ext=.mp4
   const isVideoOnly = (videoUrl && !staticImgUrl) || imageError;
   const imgUrl = staticImgUrl || product.image;
@@ -66,6 +70,16 @@ export default function ProductCard({ product, isRecommended, viewMode = "grid" 
 
   const handleCardClick = (e) => {
     e.preventDefault();
+    try {
+      let recentlyViewed = JSON.parse(localStorage.getItem('atelier_recently_viewed') || '[]');
+      recentlyViewed = recentlyViewed.filter(p => p.id !== product.id);
+      recentlyViewed.unshift(product);
+      if (recentlyViewed.length > 10) recentlyViewed.pop();
+      localStorage.setItem('atelier_recently_viewed', JSON.stringify(recentlyViewed));
+      window.dispatchEvent(new Event('recentlyViewedUpdated'));
+    } catch (e) {
+      console.error(e);
+    }
     openProductModal(product);
   };
   
@@ -81,7 +95,7 @@ export default function ProductCard({ product, isRecommended, viewMode = "grid" 
           {isVideoOnly ? (
             <video 
               ref={videoRef}
-              src={videoUrl || imgUrl} 
+              src={cachedVideoUrl || imgUrl} 
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
               loop muted playsInline
             />
@@ -92,7 +106,7 @@ export default function ProductCard({ product, isRecommended, viewMode = "grid" 
                 <div className={`absolute inset-0 transition-opacity duration-500 ${isHovered ? 'opacity-100 z-0' : 'opacity-0 z-[-1]'}`}>
                   <video 
                     ref={videoRef}
-                    src={videoUrl} 
+                    src={cachedVideoUrl} 
                     className="w-full h-full object-cover" 
                     loop 
                     muted 

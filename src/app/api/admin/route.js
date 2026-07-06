@@ -47,10 +47,7 @@ export async function POST(req) {
     // 3. Perform requested action
     switch (action) {
       case 'saveCoupon':
-        // Strip out fields that aren't in the Appwrite schema to prevent 500 errors
         const couponPayload = { ...payload };
-        delete couponPayload.type;
-        delete couponPayload.maxDiscount;
 
         const newCoupon = await databases.createDocument(
           DATABASE_ID,

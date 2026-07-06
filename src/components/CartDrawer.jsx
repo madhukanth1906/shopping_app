@@ -11,9 +11,6 @@ export default function CartDrawer() {
   const { isCartOpen, closeCart } = useAppContext();
   const { showToast } = useToast();
   const [cartItems, setCartItems] = useState([]);
-  const [promoCode, setPromoCode] = useState('');
-  const [appliedDiscount, setAppliedDiscount] = useState(0);
-  const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [imageErrors, setImageErrors] = useState({});
   const router = useRouter();
 
@@ -37,7 +34,10 @@ export default function CartDrawer() {
   const updateQuantity = (id, size, delta) => {
     const newCart = cartItems.map(item => {
       if (item.id === id && item.size === size) {
-        const newQ = Math.max(1, item.quantity + delta);
+        const newQ = Math.max(1, Math.min(item.quantity + delta, item.maxQuantity || Infinity));
+        if (newQ === item.quantity && delta > 0 && item.maxQuantity) {
+          showToast("Maximum available stock reached.", "error");
+        }
         return { ...item, quantity: newQ };
       }
       return item;
@@ -50,31 +50,8 @@ export default function CartDrawer() {
     updateLocalStorage(newCart);
   };
 
-  const handleApplyPromo = async (e) => {
-    e.preventDefault();
-    if (!promoCode.trim()) return;
-    
-    try {
-      const coupons = await fetchCoupons();
-      const validCoupon = coupons.find(c => c.code.toUpperCase() === promoCode.toUpperCase());
-      
-      if (validCoupon) {
-        setAppliedDiscount(validCoupon.discount / 100);
-        setAppliedCoupon(validCoupon);
-        showToast(`Coupon applied! ${validCoupon.discount}% off`, 'success');
-      } else {
-        setAppliedDiscount(0);
-        setAppliedCoupon(null);
-        showToast('Invalid coupon code', 'error');
-      }
-    } catch (err) {
-      showToast('Error applying coupon', 'error');
-    }
-  };
-
-  const subtotal = cartItems.reduce((sum, item) => sum + (parseFloat(item.price.replace(/[^0-9.]/g, '')) * item.quantity), 0);
-  const discountAmount = subtotal * appliedDiscount;
-  const finalTotal = subtotal - discountAmount;
+  const subtotal = cartItems.reduce((sum, item) => sum + (parseFloat(String(item.price).replace(/[^0-9.]/g, '')) * item.quantity), 0);
+  const finalTotal = subtotal;
 
   return (
     <AnimatePresence>
@@ -154,27 +131,11 @@ export default function CartDrawer() {
 
             {cartItems.length > 0 && (
               <div className="border-t border-outline-variant/10 p-6 bg-surface/80 backdrop-blur-md">
-                <form onSubmit={handleApplyPromo} className="flex gap-2 mb-6">
-                  <input 
-                    type="text" 
-                    value={promoCode}
-                    onChange={(e) => setPromoCode(e.target.value)}
-                    placeholder="Enter Promo Code" 
-                    className="flex-1 bg-surface-container-low text-xs border border-outline-variant/30 rounded px-4 py-3 outline-none focus:border-secondary transition-colors uppercase"
-                  />
-                  <button type="submit" className="px-4 py-2 bg-on-surface text-surface text-[10px] font-bold uppercase tracking-widest rounded hover:bg-secondary transition-colors">Apply</button>
-                </form>
                 <div className="space-y-3 mb-6 font-body text-sm text-on-surface-variant">
                   <div className="flex justify-between">
                     <span>Subtotal</span>
                     <span className="text-on-surface font-semibold">₹{subtotal.toFixed(2)}</span>
                   </div>
-                  {appliedDiscount > 0 && (
-                    <div className="flex justify-between text-secondary">
-                      <span>Discount ({appliedCoupon ? appliedCoupon.code : 'PROMO'})</span>
-                      <span>-₹{discountAmount.toFixed(2)}</span>
-                    </div>
-                  )}
                   <div className="flex justify-between text-outline">
                     <span>Shipping</span>
                     <span>Calculated at checkout</span>

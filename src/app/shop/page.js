@@ -38,6 +38,20 @@ function ShopContent() {
   // For dynamic categories
   const allCategories = Array.from(new Set(Object.values(products).map(p => p.category).filter(Boolean)));
 
+  const [recentlyViewed, setRecentlyViewed] = useState([]);
+
+  useEffect(() => {
+    const loadRecentlyViewed = () => {
+      try {
+        const stored = JSON.parse(localStorage.getItem('atelier_recently_viewed') || '[]');
+        setRecentlyViewed(stored);
+      } catch (e) { console.error(e); }
+    };
+    loadRecentlyViewed();
+    window.addEventListener('recentlyViewedUpdated', loadRecentlyViewed);
+    return () => window.removeEventListener('recentlyViewedUpdated', loadRecentlyViewed);
+  }, []);
+
   useEffect(() => {
     async function load() {
       try {
@@ -314,6 +328,23 @@ function ShopContent() {
             </div>
           </div>
         </div>
+        
+        {/* Recently Viewed Section */}
+        {recentlyViewed.length > 0 && (
+          <div className="max-w-[1440px] mx-auto px-6 md:px-12 mt-32 mb-16">
+            <div className="mb-8">
+              <span className="font-label uppercase tracking-[0.2em] text-[10px] text-secondary block mb-2">Your History</span>
+              <h2 className="font-headline text-3xl text-on-surface">Recently Viewed</h2>
+            </div>
+            <div className="flex gap-8 overflow-x-auto hide-scrollbar pb-8 snap-x">
+              {recentlyViewed.map(product => (
+                <div key={product.id} className="min-w-[280px] w-[280px] max-w-[280px] snap-start">
+                  <ProductCard product={product} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
       <Footer />
     </>

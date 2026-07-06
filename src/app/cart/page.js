@@ -57,6 +57,7 @@ export default function Checkout() {
   // Coupon State
   const [couponCode, setCouponCode] = useState("");
   const [discountAmount, setDiscountAmount] = useState(0);
+  const [appliedCouponId, setAppliedCouponId] = useState(null);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [usePoints, setUsePoints] = useState(false);
   const [availablePoints, setAvailablePoints] = useState(0);
@@ -84,7 +85,7 @@ export default function Checkout() {
     
     let total = 0;
     cart.forEach(item => {
-      const numericStr = (item.price || "").replace(/[^0-9.]/g, '');
+      const numericStr = String(item.price || "").replace(/[^0-9.]/g, '');
       total += (parseFloat(numericStr) || 0) * (item.quantity || 1);
     });
     setSubtotal(total);
@@ -135,19 +136,22 @@ export default function Checkout() {
         
         let discount = 0;
         if (coupon.type === 'percentage') {
-          discount = (subtotal * coupon.discountAmount) / 100;
+          discount = (subtotal * (coupon.discountAmount || 0)) / 100;
           if (coupon.maxDiscount) discount = Math.min(discount, coupon.maxDiscount);
         } else {
-          discount = coupon.discountAmount;
+          discount = coupon.discountAmount || 0;
         }
         setDiscountAmount(discount);
+        setAppliedCouponId(coupon.$id);
         showToast('Coupon applied successfully!', 'success');
       } else {
         setDiscountAmount(0);
+        setAppliedCouponId(null);
         showToast(result.message || 'Invalid or expired coupon.', 'error');
       }
     } catch (err) {
       setDiscountAmount(0);
+      setAppliedCouponId(null);
       showToast('Error validating coupon.', 'error');
     } finally {
       setIsApplyingCoupon(false);
@@ -219,7 +223,8 @@ export default function Checkout() {
         userId: user.$id,
         cartItems: cartItems,
         finalTotal: finalTotal,
-        shippingAddress: shipping
+        shippingAddress: shipping,
+        appliedCouponId: appliedCouponId
       };
       
       const res = await fetch('/api/checkout', {
@@ -241,6 +246,34 @@ export default function Checkout() {
         const earned = Math.floor(finalTotal / 10);
         const newPoints = usePoints ? (currentPoints - availablePoints + earned) : (currentPoints + earned);
         await account.updatePrefs({ ...prefs, points: newPoints });
+
+        // Send Order Confirmation Email
+        try {
+          await fetch('/api/email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: user.email,
+              subject: 'Your Azhagii Order Confirmation',
+              html: `
+                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+                  <h1 style="color: #1A1A1A;">Thank you for your order, ${shipping.fullName}!</h1>
+                  <p>Your order has been successfully placed. We are preparing it for shipment.</p>
+                  <h3>Order Summary:</h3>
+                  <ul>
+                    ${cartItems.map(item => `<li>${item.name} x${item.quantity} - ${item.price}</li>`).join('')}
+                  </ul>
+                  <h3>Total: ₹${finalTotal.toLocaleString('en-IN')}</h3>
+                  <p>Shipping Address: ${shipping.address}, ${shipping.city} ${shipping.postalCode}</p>
+                  <hr />
+                  <p style="color: #797b78; font-size: 12px;">The Azhagii Team</p>
+                </div>
+              `
+            })
+          });
+        } catch (emailErr) {
+          console.error("Failed to send order confirmation email:", emailErr);
+        }
       }
 
       localStorage.removeItem('atelier_cart');
