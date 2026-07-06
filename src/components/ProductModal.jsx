@@ -231,7 +231,7 @@ export default function ProductModal() {
                 onMouseLeave={handleMouseLeave}
               >
                 <AnimatePresence mode="wait">
-                  {images[currentImageIndex] && images[currentImageIndex].match(/\.(mp4|webm)/i) ? (
+                  {images[currentImageIndex] && (images[currentImageIndex].match(/\.(mp4|webm)/i) || imageErrors[currentImageIndex]) ? (
                     <motion.div
                       key={currentImageIndex}
                       initial={{ opacity: 0 }}
@@ -258,6 +258,7 @@ export default function ProductModal() {
                       transition={{ duration: 0.2 }}
                       src={images[currentImageIndex]}
                       alt={selectedProduct.name}
+                      onError={() => setImageErrors(prev => ({ ...prev, [currentImageIndex]: true }))}
                       style={{ ...zoomStyle, transition: 'transform 0.1s ease-out' }}
                       className="w-full h-full object-cover"
                     />

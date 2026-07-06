@@ -11,11 +11,14 @@ export default function ProductCard({ product, isRecommended, viewMode = "grid" 
   const [isInWishlist, setIsInWishlist] = useState(false);
   const { formatPrice } = useCurrency();
   const [isHovered, setIsHovered] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const images = Array.isArray(product.images) ? product.images : [product.image];
   const videoUrl = images.find(url => url && url.match(/\.(mp4|webm)/i));
   const staticImgUrl = images.find(url => url && !url.match(/\.(mp4|webm)/i));
-  const isVideoOnly = videoUrl && !staticImgUrl;
+  
+  // If the image fails to load, it might be an older video uploaded before we added &ext=.mp4
+  const isVideoOnly = (videoUrl && !staticImgUrl) || imageError;
   const imgUrl = staticImgUrl || product.image;
   const checkWishlist = () => {
     const wishlist = JSON.parse(localStorage.getItem('atelier_wishlist') || '[]');
@@ -66,13 +69,13 @@ export default function ProductCard({ product, isRecommended, viewMode = "grid" 
         <div className={`relative overflow-hidden bg-surface-container-low rounded-lg ${viewMode === "list" ? "w-48 h-64 flex-shrink-0 mb-0" : "aspect-[3/4] mb-6"}`}>
           {isVideoOnly ? (
             <video 
-              src={videoUrl} 
+              src={videoUrl || imgUrl} 
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
               autoPlay loop muted playsInline
             />
           ) : (
             <>
-              <img src={imgUrl} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+              <img src={imgUrl} alt={product.name} onError={() => setImageError(true)} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
               {videoUrl && (
                 <div className={`absolute inset-0 transition-opacity duration-500 ${isHovered ? 'opacity-100 z-0' : 'opacity-0 z-[-1]'}`}>
                   <video 
