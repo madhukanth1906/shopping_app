@@ -71,7 +71,7 @@ export default function ProductCard({ product, isRecommended, viewMode = "grid" 
             <video 
               src={videoUrl || imgUrl} 
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
-              autoPlay loop muted playsInline
+              autoPlay={isHovered} loop muted playsInline
             />
           ) : (
             <>
