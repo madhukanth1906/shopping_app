@@ -391,7 +391,7 @@ export default function Admin() {
           <button className="md:hidden p-2 -ml-2" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
             <span className="material-symbols-outlined text-2xl">{isMobileMenuOpen ? 'close' : 'menu'}</span>
           </button>
-          <Link href="/" className="font-['Noto_Serif'] italic text-2xl tracking-tighter text-[#303331] dark:text-[#fbf9f7]">AZHAGII</Link>
+          <Link href="/" className="font-serif italic text-2xl tracking-tighter text-[#303331] dark:text-[#fbf9f7]">AZHAGII</Link>
         </div>
         <div className="flex items-center gap-8">
           <button onClick={() => setIsAuthenticatedAdmin(false)} className="text-[10px] font-bold uppercase tracking-widest hover:text-secondary">Lock</button>

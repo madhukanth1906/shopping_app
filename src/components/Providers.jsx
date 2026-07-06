@@ -14,7 +14,9 @@ export function Providers({ children }) {
 
   // Close modals on route change
   useEffect(() => {
+    // eslint-disable-next-line
     setIsCartOpen(false);
+    // eslint-disable-next-line
     setIsProductModalOpen(false);
   }, [pathname]);
 

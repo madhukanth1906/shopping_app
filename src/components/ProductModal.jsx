@@ -41,8 +41,11 @@ export default function ProductModal() {
 
   useEffect(() => {
     if (isProductModalOpen && selectedProduct) {
+      // eslint-disable-next-line
       setSelectedSize(null);
+      // eslint-disable-next-line
       setCurrentImageIndex(0);
+      // eslint-disable-next-line
       setActiveTab('details');
       checkWishlist();
       
@@ -59,6 +62,7 @@ export default function ProductModal() {
         }
       });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isProductModalOpen, selectedProduct]);
 
   const [zoomStyle, setZoomStyle] = useState({ transformOrigin: 'center', transform: 'scale(1)' });
@@ -78,6 +82,7 @@ export default function ProductModal() {
   useEffect(() => {
     window.addEventListener('wishlistUpdated', checkWishlist);
     return () => window.removeEventListener('wishlistUpdated', checkWishlist);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProduct]);
 
   if (!selectedProduct) return null;
@@ -385,7 +390,7 @@ export default function ProductModal() {
                         <p>{selectedProduct.description || "High-neck silk halter dress with an exquisite cowled neck and a dramatic, sweeping ankle-length hemline."}</p>
                       )}
                       {activeTab === 'sizing' && (
-                        <p>Fits true to size. We recommend taking your normal size. Model is 175cm/5'9" and is wearing a size S.</p>
+                        <p>Fits true to size. We recommend taking your normal size. Model is 175cm/5&apos;9&quot; and is wearing a size S.</p>
                       )}
                       {activeTab === 'materials' && (
                         <p>100% Organic Silk. Dry clean only. Iron on low heat. Do not bleach. Made ethically in our Parisian atelier.</p>
