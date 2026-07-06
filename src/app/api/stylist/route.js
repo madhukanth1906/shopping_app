@@ -5,7 +5,13 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
 export async function POST(req) {
   try {
-    const { messages } = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch (e) {
+      body = { messages: [] };
+    }
+    const { messages = [] } = body;
 
     // Fetch all products to give context to the AI
     const response = await databases.listDocuments(DATABASE_ID, PRODUCTS_COLLECTION_ID);
