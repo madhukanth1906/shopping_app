@@ -61,7 +61,8 @@ export async function POST(req) {
 
       productsToUpdate.push({
         id: product.$id,
-        inventory: updatedInventoryArray
+        inventory: updatedInventoryArray,
+        originalInventory: product.inventory
       });
     }
 
@@ -81,16 +82,31 @@ export async function POST(req) {
       shippingAddress: JSON.stringify(shippingAddress)
     };
 
-    const newOrder = await databases.createDocument(
-      DATABASE_ID, 
-      ORDERS_COLLECTION_ID, 
-      ID.unique(), 
-      orderPayload,
-      [
-        // Only this specific user can read their own order
-        Permission.read(Role.user(userId))
-      ]
-    );
+    let newOrder;
+    try {
+      newOrder = await databases.createDocument(
+        DATABASE_ID, 
+        ORDERS_COLLECTION_ID, 
+        ID.unique(), 
+        orderPayload,
+        [
+          // Only this specific user can read their own order
+          Permission.read(Role.user(userId))
+        ]
+      );
+    } catch (orderError) {
+      // Rollback inventory changes if order creation fails
+      for (const p of productsToUpdate) {
+        try {
+          await databases.updateDocument(DATABASE_ID, PRODUCTS_COLLECTION_ID, p.id, {
+            inventory: p.originalInventory
+          });
+        } catch (rollbackError) {
+          console.error(`CRITICAL: Failed to rollback inventory for product ${p.id}`, rollbackError);
+        }
+      }
+      throw orderError; // Bubble up to outer catch
+    }
 
     if (appliedCouponId) {
       const COUPONS_COLLECTION_ID = "6a4759aa001f2ff1b886";
