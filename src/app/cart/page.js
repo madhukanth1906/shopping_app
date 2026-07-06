@@ -236,7 +236,9 @@ export default function Checkout() {
       const data = await res.json();
       
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to place order');
+        showToast(data.error || 'Failed to place order', 'error');
+        setIsSubmitting(false);
+        return;
       }
 
       // Points logic (still client side for ease, but ideally server side too)
@@ -281,7 +283,6 @@ export default function Checkout() {
       
       setOrderComplete(true);
     } catch (err) {
-      console.error(err);
       showToast(err.message || "Failed to place order.", "error");
     } finally {
       setIsSubmitting(false);
