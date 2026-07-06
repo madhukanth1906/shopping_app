@@ -47,12 +47,22 @@ export async function POST(req) {
         }
       }
       
-      const inventoryArray = product.inventory || [];
-      const inventoryMap = inventoryArray.reduce((acc, curr) => {
-        const [size, qty] = curr.split(':');
-        acc[size] = parseInt(qty);
-        return acc;
-      }, {});
+      let inventoryMap = {};
+      if (Array.isArray(product.inventory)) {
+        inventoryMap = product.inventory.reduce((acc, curr) => {
+          const [size, qty] = curr.split(':');
+          acc[size] = parseInt(qty);
+          return acc;
+        }, {});
+      } else if (typeof product.inventory === 'string') {
+        try {
+          inventoryMap = JSON.parse(product.inventory);
+        } catch (e) {
+          console.error("Failed to parse inventory JSON:", e);
+        }
+      } else if (typeof product.inventory === 'object' && product.inventory !== null) {
+        inventoryMap = product.inventory;
+      }
 
       const currentQty = inventoryMap[item.size] || 0;
       const orderQty = parseInt(item.quantity) || 1;
@@ -65,12 +75,12 @@ export async function POST(req) {
 
       inventoryMap[item.size] = currentQty - orderQty;
 
-      // Convert back to array of strings for Appwrite
-      const updatedInventoryArray = Object.entries(inventoryMap).map(([size, qty]) => `${size}:${qty}`);
+      // Convert back to JSON string for Appwrite (Attribute is string type)
+      const updatedInventoryString = JSON.stringify(inventoryMap);
 
       productsToUpdate.push({
         id: product.$id,
-        inventory: updatedInventoryArray,
+        inventory: updatedInventoryString,
         originalInventory: product.inventory
       });
     }

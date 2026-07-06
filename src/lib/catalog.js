@@ -70,7 +70,7 @@ export async function saveProduct(product) {
             images: product.images,
             desc: product.desc,
             category: product.category || 'Fashion Dress',
-            inventory: Object.entries(product.inventory || {}).map(([size, qty]) => `${size}:${qty}`),
+            inventory: JSON.stringify(product.inventory || {}),
             occasion: product.occasion || '',
             color: product.color || '',
             fabric: product.fabric || ''
@@ -177,12 +177,7 @@ export async function deleteReview(reviewId) {
 
 export async function fetchOrders() {
     try {
-        const response = await databases.listDocuments(
-            DATABASE_ID,
-            ORDERS_COLLECTION_ID,
-            [Query.orderDesc('$createdAt')]
-        );
-        return response.documents;
+        return await callAdminApi('fetchOrders', {});
     } catch (error) {
         console.error("Error fetching orders:", error);
         return [];

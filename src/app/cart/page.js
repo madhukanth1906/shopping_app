@@ -248,34 +248,6 @@ export default function Checkout() {
         const earned = Math.floor(finalTotal / 10);
         const newPoints = usePoints ? (currentPoints - availablePoints + earned) : (currentPoints + earned);
         await account.updatePrefs({ ...prefs, points: newPoints });
-
-        // Send Order Confirmation Email
-        try {
-          await fetch('/api/email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              to: user.email,
-              subject: 'Your Azhagii Order Confirmation',
-              html: `
-                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-                  <h1 style="color: #1A1A1A;">Thank you for your order, ${shipping.fullName}!</h1>
-                  <p>Your order has been successfully placed. We are preparing it for shipment.</p>
-                  <h3>Order Summary:</h3>
-                  <ul>
-                    ${cartItems.map(item => `<li>${item.name} x${item.quantity} - ${item.price}</li>`).join('')}
-                  </ul>
-                  <h3>Total: ₹${finalTotal.toLocaleString('en-IN')}</h3>
-                  <p>Shipping Address: ${shipping.address}, ${shipping.city} ${shipping.postalCode}</p>
-                  <hr />
-                  <p style="color: #797b78; font-size: 12px;">The Azhagii Team</p>
-                </div>
-              `
-            })
-          });
-        } catch (emailErr) {
-          console.error("Failed to send order confirmation email:", emailErr);
-        }
       }
 
       localStorage.removeItem('atelier_cart');

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { Client, Databases, Account, ID } from 'node-appwrite';
+import { Client, Databases, Account, ID, Query } from 'node-appwrite';
 
 const APPWRITE_PROJECT_ID = "6a462ca3002266cef903";
 const APPWRITE_ENDPOINT = "https://sgp.cloud.appwrite.io/v1";
@@ -46,6 +46,14 @@ export async function POST(req) {
 
     // 3. Perform requested action
     switch (action) {
+      case 'fetchOrders':
+        const ordersResponse = await databases.listDocuments(
+          DATABASE_ID,
+          ORDERS_COLLECTION_ID,
+          [Query.orderDesc('$createdAt')]
+        );
+        return NextResponse.json({ success: true, data: ordersResponse.documents });
+
       case 'saveCoupon':
         const couponPayload = { ...payload };
 
