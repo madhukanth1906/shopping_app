@@ -35,7 +35,7 @@ export const generateInvoicePDF = (order) => {
   
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
-  doc.text(`${addr.name || 'Customer'}`, 14, 56);
+  doc.text(`${addr.fullName || addr.name || 'Customer'}`, 14, 56);
   doc.text(`${addr.email || ''}`, 14, 61);
   doc.text(`${addr.phone || ''}`, 14, 66);
   if (addr.address) {
