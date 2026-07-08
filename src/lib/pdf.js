@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 export const generateInvoicePDF = (order) => {
   const doc = new jsPDF();
@@ -52,7 +52,7 @@ export const generateInvoicePDF = (order) => {
     `Rs. ${(Number(item.price) * item.quantity).toFixed(2)}`
   ]);
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: 85,
     head: [['#', 'Item', 'Qty', 'Price', 'Amount']],
     body: tableData,
