@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 
 export async function POST(request) {
   try {
@@ -35,7 +35,7 @@ export async function POST(request) {
         'content-type': 'application/json'
       },
       body: JSON.stringify({
-        sender: { name: 'Azhagii', email: 'madhu9940984501@gmail.com' },
+        sender: { name: 'Azhagii', email: 'hello@azhagii.me' },
         to: [{ email: email }],
         subject: 'Your Checkout OTP from Azhagii',
         htmlContent: `<h2>Checkout Verification Code</h2>
