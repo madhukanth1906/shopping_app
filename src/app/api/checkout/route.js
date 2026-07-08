@@ -135,6 +135,52 @@ export async function POST(req) {
       });
     }
 
+    // Send Order Confirmation Email via Brevo
+    if (process.env.BREVO_API_KEY && shippingAddress.email) {
+      try {
+        let itemsHtml = `<ul>`;
+        cartItems.forEach(item => {
+          itemsHtml += `<li>${item.name} (Size: ${item.size}) x ${item.quantity} - ₹${(item.price * item.quantity).toFixed(2)}</li>`;
+        });
+        itemsHtml += `</ul>`;
+
+        const htmlContent = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+            <h1 style="color: #7e572e; text-align: center;">Azhagii</h1>
+            <h2>Order Confirmation</h2>
+            <p>Hi ${shippingAddress.name || 'Customer'},</p>
+            <p>Thank you for shopping with Azhagii! We have received your order.</p>
+            <div style="background-color: #fbf9f7; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="margin-top: 0;">Order Summary (ID: ${newOrder.$id})</h3>
+              ${itemsHtml}
+              <h3 style="border-top: 1px solid #ddd; padding-top: 10px;">Total: ₹${finalTotal.toFixed(2)}</h3>
+            </div>
+            <h3>Shipping Details:</h3>
+            <p>${shippingAddress.address}<br>${shippingAddress.city}, ${shippingAddress.postalCode}</p>
+            <p>We will notify you once your order has been dispatched.</p>
+            <p>Best regards,<br>The Azhagii Team</p>
+          </div>
+        `;
+
+        await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: {
+            'accept': 'application/json',
+            'api-key': process.env.BREVO_API_KEY,
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify({
+            sender: { name: 'Azhagii Orders', email: 'hello@azhagii.me' },
+            to: [{ email: shippingAddress.email }],
+            subject: `Order Confirmation - ${newOrder.$id}`,
+            htmlContent: htmlContent
+          })
+        });
+      } catch (emailError) {
+        console.error("Failed to send order confirmation email:", emailError);
+      }
+    }
+
     return NextResponse.json({ success: true, order: newOrder });
 
   } catch (error) {

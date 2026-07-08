@@ -10,10 +10,11 @@ import Link from "next/link";
 import { 
   LayoutDashboard, Package, ShoppingCart, MessageSquare, Settings, 
   Ticket, LogOut, TrendingUp, Users, DollarSign, Plus, Edit2, 
-  Trash2, X, Search, CheckCircle, Truck, Eye, Check, AlertCircle, RefreshCcw, Menu, Bell, Star, UserCircle, MapPin
+  Trash2, X, Search, CheckCircle, Truck, Eye, Check, AlertCircle, RefreshCcw, Menu, Bell, Star, UserCircle, MapPin, Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { generateInvoicePDF } from '@/lib/pdf';
 
 
 export default function Admin() {
@@ -897,13 +898,20 @@ export default function Admin() {
                         return (
                           <>
                             <div className="p-8 border-b border-outline-variant/10 flex justify-between items-start">
-                              <div>
-                                <h2 className="font-headline text-2xl text-on-surface italic">Order Dossier</h2>
-                                <p className="text-xs uppercase tracking-widest text-outline mt-1">#{order.$id}</p>
+                              <div className="flex justify-between items-start mb-6">
+                                <div>
+                                  <h3 className="font-headline text-2xl">Order #{order.$id.slice(-6)}</h3>
+                                  <p className="text-sm text-outline mt-1">{new Date(order.$createdAt).toLocaleString()}</p>
+                                </div>
+                                <div className="flex gap-2">
+                                  <button onClick={() => generateInvoicePDF(order)} className="bg-surface-container text-on-surface px-4 py-2 rounded flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:bg-secondary hover:text-surface transition-colors">
+                                    <Download size={14} /> Invoice
+                                  </button>
+                                  <button onClick={() => setSelectedDossierOrder(null)} className="p-2 hover:bg-surface-container-low rounded-full transition-colors">
+                                    <X size={20} />
+                                  </button>
+                                </div>
                               </div>
-                              <button onClick={() => setSelectedDossierOrder(null)} className="p-2 text-outline hover:text-on-surface">
-                                <X size={20} strokeWidth={1.5} />
-                              </button>
                             </div>
                             
                             <div className="p-8 flex-1 overflow-y-auto space-y-8">

@@ -4,6 +4,16 @@ import { ToastProvider } from "@/components/ToastProvider";
 export const metadata = {
   title: "Azhagii - Women's Dresses",
   description: "Redefining modern elegance through curation and craftsmanship.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Azhagii",
+  }
+};
+
+export const viewport = {
+  themeColor: "#7e572e",
 };
 
 import { Providers } from "@/components/Providers";

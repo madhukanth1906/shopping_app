@@ -9,8 +9,9 @@ import { getUser, loginWithGoogle, logout } from "@/lib/auth";
 import { account } from "@/lib/appwrite";
 import { useToast } from "@/components/ToastProvider";
 import Link from "next/link";
-import { LayoutDashboard, History, MapPin, Heart, ShieldCheck, LogOut, PlusCircle, Trash2, X, ChevronRight, Settings, UserCircle, Bell, ArrowRight, Plus, Truck, PackageCheck, CheckCircle2, Star } from 'lucide-react';
+import { LayoutDashboard, History, MapPin, Heart, ShieldCheck, LogOut, PlusCircle, Trash2, X, ChevronRight, Settings, UserCircle, Bell, ArrowRight, Plus, Truck, PackageCheck, CheckCircle2, Star, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { generateInvoicePDF } from '@/lib/pdf';
 import { useAppContext } from "@/components/Providers";
 
 import { v4 as uuidv4 } from "uuid";
@@ -345,6 +346,12 @@ export default function Account() {
                       Track Shipment
                     </button>
                   )}
+                  <button 
+                    onClick={() => generateInvoicePDF(order)}
+                    className="text-[10px] flex-1 py-2 text-center border border-outline-variant/20 text-on-surface rounded font-bold uppercase tracking-widest hover:bg-surface-container transition-colors"
+                  >
+                    Invoice
+                  </button>
                 </div>
                 
                 {(order.status === 'Cancelled' || order.status === 'Refund Requested') && (() => {
@@ -403,11 +410,10 @@ export default function Account() {
                         })()}
                       </td>
                       <td className="px-6 py-6 text-right font-semibold">₹{order.total.toFixed(2)}</td>
-                      <td className="px-6 py-6 text-right">
                         {(order.status === 'Pending' || order.status === 'Processing') && (
                           <button 
                             onClick={() => { setOrderToCancel(order); setIsCancelModalOpen(true); }}
-                            className="text-[10px] font-bold uppercase tracking-widest text-error hover:underline opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="text-[10px] font-bold uppercase tracking-widest text-error hover:underline opacity-0 group-hover:opacity-100 transition-opacity ml-4"
                           >
                             Cancel
                           </button>
@@ -417,9 +423,15 @@ export default function Account() {
                             onClick={() => setSelectedTrackingOrder(order)}
                             className="text-[10px] font-bold uppercase tracking-widest text-on-surface hover:text-secondary hover:underline transition-colors ml-4"
                           >
-                            Track Shipment
+                            Track
                           </button>
                         )}
+                        <button 
+                          onClick={() => generateInvoicePDF(order)}
+                          className="text-[10px] font-bold uppercase tracking-widest text-on-surface hover:text-secondary hover:underline transition-colors ml-4"
+                        >
+                          Invoice
+                        </button>
                       </td>
                     </tr>
                   );
