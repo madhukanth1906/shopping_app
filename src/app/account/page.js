@@ -410,6 +410,7 @@ export default function Account() {
                         })()}
                       </td>
                       <td className="px-6 py-6 text-right font-semibold">₹{order.total.toFixed(2)}</td>
+                      <td className="px-6 py-6 text-right">
                         {(order.status === 'Pending' || order.status === 'Processing') && (
                           <button 
                             onClick={() => { setOrderToCancel(order); setIsCancelModalOpen(true); }}
