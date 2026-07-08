@@ -13,6 +13,7 @@ import {
   Trash2, X, Search, CheckCircle, Truck, Eye, Check, AlertCircle, RefreshCcw, Menu, Bell, Star, UserCircle, MapPin
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 
 
 export default function Admin() {
@@ -48,6 +49,7 @@ export default function Admin() {
   const [orderDateFilter, setOrderDateFilter] = useState("");
   const [selectedDossierOrder, setSelectedDossierOrder] = useState(null);
   const [trackingNumber, setTrackingNumber] = useState("");
+  const [courierName, setCourierName] = useState("");
   const [isAdminCancelModalOpen, setIsAdminCancelModalOpen] = useState(false);
   const [adminCancelReason, setAdminCancelReason] = useState('');
   const [adminOrderToCancel, setAdminOrderToCancel] = useState(null);
@@ -333,13 +335,25 @@ export default function Admin() {
   });
   const topSellingProduct = products[topSellingProductId];
 
-  // Monthly Earnings
+  // Monthly Earnings & Chart Data
   const monthlyEarnings = {};
   orders.filter(o => o.status !== 'Cancelled').forEach(o => {
     const date = new Date(o.$createdAt);
     const monthYear = date.toLocaleString('default', { month: 'short', year: 'numeric' });
     monthlyEarnings[monthYear] = (monthlyEarnings[monthYear] || 0) + o.total;
   });
+
+  const chartData = Object.keys(monthlyEarnings).map(key => ({
+    name: key,
+    revenue: monthlyEarnings[key]
+  }));
+
+  const COLORS = ['#7e572e', '#a3805a', '#303331', '#f1ead7'];
+  const orderStatusCounts = orders.reduce((acc, order) => {
+    acc[order.status] = (acc[order.status] || 0) + 1;
+    return acc;
+  }, {});
+  const pieData = Object.keys(orderStatusCounts).map(key => ({ name: key, value: orderStatusCounts[key] }));
 
   // Stock Alerts
   let outOfStock = [];
@@ -537,22 +551,54 @@ export default function Admin() {
 
               <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="bg-surface/80 backdrop-blur-xl p-8 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-outline-variant/20">
-                  <h3 className="text-xs uppercase tracking-[0.2em] text-outline mb-6 font-bold">Monthly Earnings</h3>
-                  <div className="space-y-4">
-                    {Object.keys(monthlyEarnings).length === 0 ? (
+                  <h3 className="text-xs uppercase tracking-[0.2em] text-outline mb-6 font-bold">Monthly Revenue Trend</h3>
+                  <div className="h-64 w-full">
+                    {chartData.length === 0 ? (
                       <p className="text-sm text-outline">No earnings data available.</p>
                     ) : (
-                      Object.entries(monthlyEarnings).map(([month, amount]) => (
-                        <div key={month} className="flex justify-between items-center border-b border-outline-variant/10 pb-4">
-                          <span className="text-sm font-medium">{month}</span>
-                          <span className="font-headline text-lg">₹{amount.toFixed(2)}</span>
-                        </div>
-                      ))
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={chartData}>
+                          <XAxis dataKey="name" stroke="#9ca3af" fontSize={10} tickLine={false} axisLine={false} />
+                          <YAxis stroke="#9ca3af" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value}`} />
+                          <RechartsTooltip cursor={{ fill: 'transparent' }} contentStyle={{ backgroundColor: '#fff', border: '1px solid #eee', borderRadius: '8px', fontSize: '12px' }} />
+                          <Line type="monotone" dataKey="revenue" stroke="#7e572e" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                        </LineChart>
+                      </ResponsiveContainer>
                     )}
                   </div>
                 </div>
 
                 <div className="bg-surface/80 backdrop-blur-xl p-8 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-outline-variant/20">
+                  <h3 className="text-xs uppercase tracking-[0.2em] text-outline mb-6 font-bold">Order Fulfillment Status</h3>
+                  <div className="h-64 w-full">
+                    {pieData.length === 0 ? (
+                      <p className="text-sm text-outline">No order data available.</p>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={pieData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={80}
+                            paddingAngle={5}
+                            dataKey="value"
+                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                            labelLine={false}
+                          >
+                            {pieData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <RechartsTooltip />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-surface/80 md:col-span-2 backdrop-blur-xl p-8 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-outline-variant/20">
                   <h3 className="text-xs uppercase tracking-[0.2em] text-outline mb-6 font-bold">Stock Overview</h3>
                   <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
                     {Object.values(products).map(product => (
@@ -806,7 +852,7 @@ export default function Admin() {
                                       <button onClick={() => { setAdminOrderToCancel(order); setIsAdminCancelModalOpen(true); }} className="bg-surface-container text-error px-4 py-2 rounded flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:bg-error/10 transition-colors">
                                         <X size={14} /> Cancel
                                       </button>
-                                      <button onClick={() => { setSelectedDossierOrder(order); setTrackingNumber(""); }} className="bg-[#7e572e] text-surface px-4 py-2 rounded flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:bg-[#5c3e1e] transition-colors">
+                                      <button onClick={() => { setSelectedDossierOrder(order); setTrackingNumber(""); setCourierName(""); }} className="bg-[#7e572e] text-surface px-4 py-2 rounded flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:bg-[#5c3e1e] transition-colors">
                                         <Truck size={14} /> Ship
                                       </button>
                                     </>
@@ -881,6 +927,16 @@ export default function Admin() {
                                       {addr.address}, {addr.city} - {addr.postalCode}
                                     </span>
                                   </div>
+                                  {addr.trackingNumber && addr.courierName && (
+                                    <div className="flex gap-3 text-sm text-on-surface-variant pt-2 border-t border-outline-variant/10">
+                                      <Truck size={16} className="mt-0.5 text-outline" /> 
+                                      <span className="text-xs">
+                                        <span className="font-bold text-[10px] uppercase tracking-widest block text-outline mb-1">Fulfillment Tracking</span>
+                                        Dispatched via <span className="font-bold">{addr.courierName}</span><br />
+                                        Tracking Number: <span className="font-mono bg-surface-container px-2 py-1 rounded select-all mt-1 inline-block">{addr.trackingNumber}</span>
+                                      </span>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
 
@@ -910,6 +966,13 @@ export default function Admin() {
                               <div className="p-8 border-t border-outline-variant/10 bg-surface-container-lowest flex flex-col gap-3">
                                 <input 
                                   type="text" 
+                                  placeholder="Courier Name (e.g. BlueDart, FedEx)"
+                                  value={courierName}
+                                  onChange={e => setCourierName(e.target.value)}
+                                  className="w-full bg-surface-container-low border-none rounded p-3 text-sm outline-none focus:ring-1 focus:ring-[#7e572e]"
+                                />
+                                <input 
+                                  type="text" 
                                   placeholder="Enter Tracking Number (e.g. TRK-98182)"
                                   value={trackingNumber}
                                   onChange={e => setTrackingNumber(e.target.value)}
@@ -917,7 +980,11 @@ export default function Admin() {
                                 />
                                 <button 
                                   onClick={() => {
-                                    const updatedAddr = { ...addr, trackingNumber };
+                                    if (!courierName || !trackingNumber) {
+                                      showToast('Please enter both Courier Name and Tracking Number.', 'error');
+                                      return;
+                                    }
+                                    const updatedAddr = { ...addr, trackingNumber, courierName };
                                     handleUpdateOrderStatus(order.$id, 'Shipped', JSON.stringify(updatedAddr));
                                     setSelectedDossierOrder(null);
                                   }}
