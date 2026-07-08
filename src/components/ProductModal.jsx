@@ -122,20 +122,23 @@ export default function ProductModal() {
     ? selectedProduct.images 
     : [selectedProduct.image];
   const totalInventory = liveStock ? Object.values(liveStock).reduce((sum, qty) => sum + qty, 0) : (selectedProduct?.inventory ? Object.values(selectedProduct.inventory).reduce((sum, qty) => sum + qty, 0) : 0);
-  const isCompletelyOutOfStock = totalInventory <= 0;
+  const isCompletelyOutOfStock = selectedProduct?.category === 'Saree' ? false : totalInventory <= 0;
 
   const handleAddToCart = () => {
-    if (!selectedSize) {
+    const isSaree = selectedProduct.category === 'Saree';
+    const finalSize = isSaree ? 'One Size' : selectedSize;
+
+    if (!finalSize) {
       showToast("Please select a size first", "error");
       return;
     }
     
     // Add to cart logic
     const cart = JSON.parse(localStorage.getItem('atelier_cart') || '[]');
-    const existing = cart.find(item => item.id === selectedProduct.id && item.size === selectedSize);
+    const existing = cart.find(item => item.id === selectedProduct.id && item.size === finalSize);
     
     const currentInventory = liveStock || selectedProduct.inventory || {};
-    const maxQty = currentInventory[selectedSize] || 0;
+    const maxQty = currentInventory[finalSize] || 0;
 
     if (existing) {
       if (existing.quantity >= maxQty) {
@@ -153,7 +156,7 @@ export default function ProductModal() {
         name: selectedProduct.name,
         price: selectedProduct.price,
         image: images[0],
-        size: selectedSize,
+        size: finalSize,
         quantity: 1,
         maxQuantity: maxQty
       });
@@ -348,37 +351,39 @@ export default function ProductModal() {
               </div>
 
               {/* Size Selector */}
-              <div className="mb-8">
-                <div className="flex justify-between items-center mb-3">
-                  <h3 className="font-label uppercase tracking-widest text-[10px] text-outline font-bold">Select Size:</h3>
-                  <button onClick={() => setIsSizeCalcOpen(true)} className="text-[10px] text-[#7e572e] font-bold uppercase tracking-widest hover:text-on-surface transition-colors">
-                    SIZE ADVISOR
-                  </button>
-                </div>
-                <div className="flex gap-3">
-                  {['XS', 'S', 'M', 'L', 'XL'].map(size => {
-                    const stock = liveStock ? liveStock[size] : selectedProduct.inventory?.[size];
-                    const isOutOfStock = !stock || stock <= 0;
+              {selectedProduct.category !== 'Saree' && (
+                <div className="mb-8">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="font-label uppercase tracking-widest text-[10px] text-outline font-bold">Select Size:</h3>
+                    <button onClick={() => setIsSizeCalcOpen(true)} className="text-[10px] text-[#7e572e] font-bold uppercase tracking-widest hover:text-on-surface transition-colors">
+                      SIZE ADVISOR
+                    </button>
+                  </div>
+                  <div className="flex gap-3">
+                    {['XS', 'S', 'M', 'L', 'XL'].map(size => {
+                      const stock = liveStock ? liveStock[size] : selectedProduct.inventory?.[size];
+                      const isOutOfStock = !stock || stock <= 0;
 
-                    return (
-                      <button 
-                        key={size}
-                        disabled={isOutOfStock}
-                        onClick={() => setSelectedSize(size)}
-                        className={`w-14 h-12 flex items-center justify-center font-label text-xs uppercase tracking-widest rounded border transition-all duration-300 ${
-                          isOutOfStock 
-                            ? 'opacity-40 border-outline-variant/30 text-outline line-through bg-surface cursor-not-allowed' 
-                            : selectedSize === size 
-                              ? 'border-on-surface bg-on-surface text-surface shadow-md scale-105' 
-                              : 'border-outline-variant hover:border-on-surface text-on-surface'
-                        }`}
-                      >
-                        {size}
-                      </button>
-                    );
-                  })}
+                      return (
+                        <button 
+                          key={size}
+                          disabled={isOutOfStock}
+                          onClick={() => setSelectedSize(size)}
+                          className={`w-14 h-12 flex items-center justify-center font-label text-xs uppercase tracking-widest rounded border transition-all duration-300 ${
+                            isOutOfStock 
+                              ? 'opacity-40 border-outline-variant/30 text-outline line-through bg-surface cursor-not-allowed' 
+                              : selectedSize === size 
+                                ? 'border-on-surface bg-on-surface text-surface shadow-md scale-105' 
+                                : 'border-outline-variant hover:border-on-surface text-on-surface'
+                          }`}
+                        >
+                          {size}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
 
 
 

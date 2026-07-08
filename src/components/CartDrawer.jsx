@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
 import { useAppContext } from './Providers';
 import { useRouter } from 'next/navigation';
-import { fetchCoupons } from '@/lib/catalog';
+import { fetchCoupons, fetchProducts } from '@/lib/catalog';
 import { useToast } from './ToastProvider';
 
 export default function CartDrawer() {
@@ -13,6 +13,8 @@ export default function CartDrawer() {
   const [cartItems, setCartItems] = useState([]);
   const [imageErrors, setImageErrors] = useState({});
   const router = useRouter();
+
+  const [liveProducts, setLiveProducts] = useState(null);
 
   const updateCartState = () => {
     setCartItems(JSON.parse(localStorage.getItem('atelier_cart') || '[]'));
@@ -24,6 +26,12 @@ export default function CartDrawer() {
     return () => window.removeEventListener('cartUpdated', updateCartState);
   }, []);
 
+  useEffect(() => {
+    if (isCartOpen) {
+      fetchProducts().then(setLiveProducts).catch(() => {});
+    }
+  }, [isCartOpen]);
+
   // Update localStorage when cartItems changes internally
   const updateLocalStorage = (newCart) => {
     localStorage.setItem('atelier_cart', JSON.stringify(newCart));
@@ -34,11 +42,17 @@ export default function CartDrawer() {
   const updateQuantity = (id, size, delta) => {
     const newCart = cartItems.map(item => {
       if (item.id === id && item.size === size) {
-        const newQ = Math.max(1, Math.min(item.quantity + delta, item.maxQuantity || Infinity));
-        if (newQ === item.quantity && delta > 0 && item.maxQuantity) {
+        let maxAllowed = item.maxQuantity !== undefined ? item.maxQuantity : 10;
+        
+        if (liveProducts && liveProducts[id] && liveProducts[id].inventory) {
+          maxAllowed = liveProducts[id].inventory[size] || 0;
+        }
+
+        const newQ = Math.max(1, Math.min(item.quantity + delta, maxAllowed));
+        if (newQ === item.quantity && delta > 0) {
           showToast("Maximum available stock reached.", "error");
         }
-        return { ...item, quantity: newQ };
+        return { ...item, quantity: newQ, maxQuantity: maxAllowed };
       }
       return item;
     });

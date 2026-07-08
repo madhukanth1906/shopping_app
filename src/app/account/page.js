@@ -262,10 +262,10 @@ export default function Account() {
       const isOnline = shippingAddress.paymentMethod === 'Online Payment';
       const newStatus = isOnline ? 'Refund Requested' : 'Cancelled';
       
-      const updatedShipping = JSON.stringify({
+      const updatedShipping = {
         ...shippingAddress,
         cancelReason: cancelReason
-      });
+      };
 
       await cancelOrder(orderToCancel.$id, newStatus, updatedShipping);
       showToast(`Order ${isOnline ? 'refund requested' : 'cancelled'}.`, 'success');

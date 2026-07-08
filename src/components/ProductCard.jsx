@@ -13,24 +13,57 @@ export default function ProductCard({ product, isRecommended, viewMode = "grid" 
   const { formatPrice } = useCurrency();
   const [isHovered, setIsHovered] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [isIntersecting, setIsIntersecting] = useState(false);
   const videoRef = useRef(null);
+  const cardRef = useRef(null);
 
-  useEffect(() => {
-    if (videoRef.current) {
-      if (isHovered) {
-        videoRef.current.play().catch(() => {});
-      } else {
-        videoRef.current.pause();
-      }
-    }
-  }, [isHovered]);
 
   const images = Array.isArray(product.images) ? product.images : [product.image];
   const videoUrl = images.find(url => url && url.match(/\.(mp4|webm)/i));
   const staticImgUrl = images.find(url => url && !url.match(/\.(mp4|webm)/i));
   
-  // Cache the video explicitly when hovered, allowing instant reload next time
-  const cachedVideoUrl = useCachedVideo(videoUrl, isHovered);
+  // Cache the video explicitly when hovered or intersecting (mobile), allowing instant reload next time
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+  const cachedVideoUrl = useCachedVideo(videoUrl, isHovered || (isMobile && isIntersecting));
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          setIsIntersecting(entry.isIntersecting);
+        });
+      },
+      { threshold: 0.6 } // 60% of the card must be visible
+    );
+
+    if (cardRef.current) observer.observe(cardRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      const isMobile = window.innerWidth <= 768;
+      if (isHovered || (isMobile && isIntersecting)) {
+        // Need a small timeout to let the new src load if it just changed
+        setTimeout(() => {
+          if (videoRef.current) videoRef.current.play().catch(() => {});
+        }, 50);
+      } else {
+        videoRef.current.pause();
+      }
+    }
+  }, [isHovered, isIntersecting, cachedVideoUrl]);
+
+  const handleTimeUpdate = () => {
+    if (videoRef.current) {
+      const isMobile = window.innerWidth <= 768;
+      // Loop the first 2 seconds for mobile preview
+      if (isMobile && !isHovered && videoRef.current.currentTime >= 2) {
+        videoRef.current.currentTime = 0;
+        videoRef.current.play().catch(() => {});
+      }
+    }
+  };
 
   // If the image fails to load, it might be an older video uploaded before we added &ext=.mp4
   const isVideoOnly = (videoUrl && !staticImgUrl) || imageError;
@@ -84,7 +117,7 @@ export default function ProductCard({ product, isRecommended, viewMode = "grid" 
   };
   
   return (
-    <div onClick={handleCardClick} className="block w-full text-left">
+    <div onClick={handleCardClick} ref={cardRef} className="block w-full text-left">
       <motion.div 
         whileHover={{ y: -5 }} 
         onHoverStart={() => setIsHovered(true)}
@@ -98,12 +131,13 @@ export default function ProductCard({ product, isRecommended, viewMode = "grid" 
               src={cachedVideoUrl || imgUrl} 
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
               loop muted playsInline
+              onTimeUpdate={handleTimeUpdate}
             />
           ) : (
             <>
               <img src={imgUrl} alt={product.name} onError={() => setImageError(true)} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
               {videoUrl && (
-                <div className={`absolute inset-0 transition-opacity duration-500 ${isHovered ? 'opacity-100 z-0' : 'opacity-0 z-[-1]'}`}>
+                <div className={`absolute inset-0 transition-opacity duration-500 ${isHovered || (isIntersecting && typeof window !== 'undefined' && window.innerWidth <= 768) ? 'opacity-100 z-0' : 'opacity-0 z-[-1]'}`}>
                   <video 
                     ref={videoRef}
                     src={cachedVideoUrl} 
@@ -111,12 +145,14 @@ export default function ProductCard({ product, isRecommended, viewMode = "grid" 
                     loop 
                     muted 
                     playsInline
+                    onTimeUpdate={handleTimeUpdate}
                   />
                 </div>
               )}
             </>
           )}
-          
+
+
           {/* Stock Badges */}
           {totalInventory === 0 ? (
             <div className="absolute top-4 left-4 bg-error text-white px-3 py-1 rounded text-[10px] font-bold uppercase tracking-widest z-10 shadow-sm">

@@ -75,6 +75,49 @@ export async function POST(req) {
         if (payload.updatedShippingAddress) {
           orderData.shippingAddress = JSON.stringify(payload.updatedShippingAddress);
         }
+
+        // Restore stock if transitioning to Cancelled or Refund Requested
+        const adminOrder = await databases.getDocument(DATABASE_ID, ORDERS_COLLECTION_ID, payload.orderId);
+        if (adminOrder.status !== 'Cancelled' && adminOrder.status !== 'Refund Requested' && (payload.status === 'Cancelled' || payload.status === 'Refund Requested')) {
+          const items = JSON.parse(adminOrder.items || '[]');
+          for (const item of items) {
+            try {
+              let product;
+              try {
+                product = await databases.getDocument(DATABASE_ID, PRODUCTS_COLLECTION_ID, item.id);
+              } catch(err) {
+                const fallback = await databases.listDocuments(DATABASE_ID, PRODUCTS_COLLECTION_ID, [Query.equal('productId', item.id)]);
+                if (fallback.documents.length > 0) product = fallback.documents[0];
+              }
+              
+              if (product) {
+                let inventoryMap = {};
+                if (Array.isArray(product.inventory)) {
+                  inventoryMap = product.inventory.reduce((acc, curr) => {
+                    const [sz, qty] = curr.split(':');
+                    acc[sz] = parseInt(qty);
+                    return acc;
+                  }, {});
+                } else if (typeof product.inventory === 'string') {
+                  try { inventoryMap = JSON.parse(product.inventory); } catch(e){}
+                } else if (typeof product.inventory === 'object' && product.inventory !== null) {
+                  inventoryMap = product.inventory;
+                }
+
+                const size = item.size || 'One Size';
+                const qtyToRestore = parseInt(item.quantity) || 1;
+                inventoryMap[size] = (parseInt(inventoryMap[size]) || 0) + qtyToRestore;
+
+                await databases.updateDocument(DATABASE_ID, PRODUCTS_COLLECTION_ID, product.$id, {
+                  inventory: JSON.stringify(inventoryMap)
+                });
+              }
+            } catch (err) {
+              console.error("Failed to restore stock for item", item.id, err);
+            }
+          }
+        }
+
         const updatedOrder = await databases.updateDocument(
           DATABASE_ID,
           ORDERS_COLLECTION_ID,

@@ -215,17 +215,23 @@ export default function Admin() {
 
   const openRestockModal = (product) => {
     setRestockProduct(product);
-    setRestockQuantities({ XS: 0, S: 0, M: 0, L: 0, XL: 0 });
+    setRestockQuantities({ XS: 0, S: 0, M: 0, L: 0, XL: 0, 'One Size': 0 });
   };
 
   const executeRestock = async () => {
     if (!restockProduct) return;
     try {
       const updatedInventory = { ...restockProduct.inventory };
-      ['XS', 'S', 'M', 'L', 'XL'].forEach(s => {
-        const qtyToAdd = parseInt(restockQuantities[s]) || 0;
-        updatedInventory[s] = (parseInt(updatedInventory[s]) || 0) + qtyToAdd;
-      });
+      
+      if (restockProduct.category === 'Saree') {
+        const qtyToAdd = parseInt(restockQuantities['One Size']) || 0;
+        updatedInventory['One Size'] = (parseInt(updatedInventory['One Size']) || 0) + qtyToAdd;
+      } else {
+        ['XS', 'S', 'M', 'L', 'XL'].forEach(s => {
+          const qtyToAdd = parseInt(restockQuantities[s]) || 0;
+          updatedInventory[s] = (parseInt(updatedInventory[s]) || 0) + qtyToAdd;
+        });
+      }
       
       let sizeString = '';
       if (restockProduct.category === 'Fashion Dress' || !restockProduct.category) {
@@ -1144,24 +1150,40 @@ export default function Admin() {
       {restockProduct && (
         <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-surface rounded-xl shadow-xl w-full max-w-sm p-6">
-            <h3 className="font-headline text-xl mb-4 text-center">Restock Sizes</h3>
+            <h3 className="font-headline text-xl mb-4 text-center">Restock {restockProduct.category === 'Saree' ? 'Quantity' : 'Sizes'}</h3>
             <p className="text-on-surface-variant text-sm mb-6 text-center">Add quantities for {restockProduct.name}. Leave at 0 if no new stock.</p>
             <div className="space-y-4 mb-6">
-              {['XS', 'S', 'M', 'L', 'XL'].map(size => (
-                <div key={size} className="flex justify-between items-center bg-surface-container-low p-2 rounded">
-                  <span className="font-bold text-sm">{size} <span className="text-[10px] text-outline font-normal">(Current: {restockProduct.inventory[size] || 0})</span></span>
+              {restockProduct.category === 'Saree' ? (
+                <div className="flex justify-between items-center bg-surface-container-low p-2 rounded">
+                  <span className="font-bold text-sm">Quantity <span className="text-[10px] text-outline font-normal">(Current: {restockProduct.inventory['One Size'] || 0})</span></span>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-outline font-bold uppercase">+</span>
                     <input 
                       type="number" 
                       min="0"
-                      value={restockQuantities[size]}
-                      onChange={(e) => setRestockQuantities({...restockQuantities, [size]: e.target.value})}
+                      value={restockQuantities['One Size']}
+                      onChange={(e) => setRestockQuantities({...restockQuantities, 'One Size': e.target.value})}
                       className="w-16 bg-surface border border-outline-variant/30 rounded p-1 text-center text-sm focus:outline-none focus:border-secondary"
                     />
                   </div>
                 </div>
-              ))}
+              ) : (
+                ['XS', 'S', 'M', 'L', 'XL'].map(size => (
+                  <div key={size} className="flex justify-between items-center bg-surface-container-low p-2 rounded">
+                    <span className="font-bold text-sm">{size} <span className="text-[10px] text-outline font-normal">(Current: {restockProduct.inventory[size] || 0})</span></span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-outline font-bold uppercase">+</span>
+                      <input 
+                        type="number" 
+                        min="0"
+                        value={restockQuantities[size]}
+                        onChange={(e) => setRestockQuantities({...restockQuantities, [size]: e.target.value})}
+                        className="w-16 bg-surface border border-outline-variant/30 rounded p-1 text-center text-sm focus:outline-none focus:border-secondary"
+                      />
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
             <div className="flex justify-center gap-4">
               <button onClick={() => setRestockProduct(null)} className="px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest text-outline border border-outline-variant/30 hover:bg-surface-container-low transition-colors">Cancel</button>
