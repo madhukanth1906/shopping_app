@@ -62,6 +62,12 @@ export default function Checkout() {
   const [usePoints, setUsePoints] = useState(false);
   const [availablePoints, setAvailablePoints] = useState(0);
 
+  // OTP State
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpValue, setOtpValue] = useState("");
+  const [otpHash, setOtpHash] = useState(null);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
   
 
   const steps = [
@@ -217,6 +223,56 @@ export default function Checkout() {
   
   
   const handlePlaceOrder = async () => {
+    setIsSendingOtp(true);
+    try {
+      const res = await fetch('/api/otp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setOtpHash(data.hash);
+        setShowOtpModal(true);
+        showToast("OTP sent to your email!", "success");
+      } else {
+        showToast(data.error || "Failed to send OTP", "error");
+      }
+    } catch (e) {
+      showToast("Error sending OTP", "error");
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const verifyOtpAndPlaceOrder = async () => {
+    if (!otpValue || otpValue.length !== 6) {
+      showToast("Please enter a valid 6-digit OTP", "error");
+      return;
+    }
+    setIsVerifyingOtp(true);
+    try {
+      const res = await fetch('/api/otp/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email, otp: otpValue, hashWithExpires: otpHash })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setShowOtpModal(false);
+        showToast("Email verified!", "success");
+        await executeOrderPlacement();
+      } else {
+        showToast(data.error || "Invalid OTP", "error");
+      }
+    } catch (e) {
+      showToast("Verification failed", "error");
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
+  const executeOrderPlacement = async () => {
     setIsSubmitting(true);
     try {
       const orderPayload = {
@@ -499,10 +555,10 @@ export default function Checkout() {
               ) : (
                 <button 
                   onClick={handlePlaceOrder}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isSendingOtp}
                   className="ml-auto px-12 py-4 bg-secondary text-surface text-[10px] uppercase font-bold tracking-widest rounded hover:bg-on-surface transition-all shadow-md active:scale-95 disabled:opacity-50"
                 >
-                  {isSubmitting ? 'Processing...' : 'Place Order'}
+                  {isSubmitting ? 'Processing...' : isSendingOtp ? 'Sending OTP...' : 'Place Order'}
                 </button>
               )}
             </div>
@@ -580,6 +636,41 @@ export default function Checkout() {
 
         </div>
       </main>
+
+      {showOtpModal && (
+        <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center relative">
+            <h3 className="font-headline text-2xl mb-2">Verify Your Email</h3>
+            <p className="text-on-surface-variant text-sm mb-6">We've sent a 6-digit code to <br/><strong className="text-on-surface">{user?.email}</strong>.</p>
+            
+            <input 
+              type="text" 
+              maxLength="6"
+              value={otpValue}
+              onChange={e => setOtpValue(e.target.value.replace(/\D/g, ''))}
+              placeholder="0 0 0 0 0 0" 
+              className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-4 text-center text-2xl tracking-[0.5em] focus:border-secondary outline-none mb-6"
+            />
+            
+            <div className="flex justify-center gap-3">
+              <button 
+                onClick={() => setShowOtpModal(false)} 
+                className="flex-1 py-3 rounded-full text-xs font-bold uppercase tracking-widest text-outline border border-outline-variant/30 hover:bg-surface-container-low transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={verifyOtpAndPlaceOrder} 
+                disabled={isVerifyingOtp || otpValue.length !== 6}
+                className="flex-1 py-3 rounded-full text-xs font-bold uppercase tracking-widest bg-secondary text-white hover:bg-secondary/90 transition-colors disabled:opacity-50"
+              >
+                {isVerifyingOtp ? 'Verifying...' : 'Verify'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Footer />
     </>
   );
