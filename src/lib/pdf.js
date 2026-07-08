@@ -30,10 +30,10 @@ export const generateInvoicePDF = (order) => {
 
   // Bill To
   doc.setFontSize(12);
-  doc.setFont('', 'bold');
+  doc.setFont('helvetica', 'bold');
   doc.text('Billed To:', 14, 50);
   
-  doc.setFont('', 'normal');
+  doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   doc.text(`${addr.name || 'Customer'}`, 14, 56);
   doc.text(`${addr.email || ''}`, 14, 61);
@@ -48,8 +48,8 @@ export const generateInvoicePDF = (order) => {
     index + 1,
     `${item.name} (Size: ${item.size})`,
     item.quantity,
-    `Rs. ${item.price.toFixed(2)}`,
-    `Rs. ${(item.price * item.quantity).toFixed(2)}`
+    `Rs. ${Number(item.price).toFixed(2)}`,
+    `Rs. ${(Number(item.price) * item.quantity).toFixed(2)}`
   ]);
 
   doc.autoTable({
@@ -69,12 +69,12 @@ export const generateInvoicePDF = (order) => {
   // Total
   const finalY = doc.lastAutoTable.finalY || 85;
   doc.setFontSize(12);
-  doc.setFont('', 'bold');
-  doc.text(`Grand Total: Rs. ${order.total.toFixed(2)}`, 140, finalY + 10);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`Grand Total: Rs. ${Number(order.total).toFixed(2)}`, 140, finalY + 10);
   
   // Payment Details
   doc.setFontSize(10);
-  doc.setFont('', 'normal');
+  doc.setFont('helvetica', 'normal');
   doc.text(`Payment Method: ${addr.paymentMethod || 'Online'}`, 14, finalY + 10);
 
   // Footer
