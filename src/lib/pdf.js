@@ -43,13 +43,19 @@ export const generateInvoicePDF = (order) => {
     doc.text(`${addr.city || ''}, ${addr.postalCode || ''}`, 14, 76);
   }
 
+  const parsePrice = (price) => {
+    if (!price) return 0;
+    const num = Number(String(price).replace(/[^0-9.-]+/g, ""));
+    return isNaN(num) ? 0 : num;
+  };
+
   // Items Table
   const tableData = items.map((item, index) => [
     index + 1,
     `${item.name} (Size: ${item.size})`,
     item.quantity,
-    `Rs. ${Number(item.price).toFixed(2)}`,
-    `Rs. ${(Number(item.price) * item.quantity).toFixed(2)}`
+    `Rs. ${parsePrice(item.price).toFixed(2)}`,
+    `Rs. ${(parsePrice(item.price) * item.quantity).toFixed(2)}`
   ]);
 
   autoTable(doc, {
@@ -70,7 +76,7 @@ export const generateInvoicePDF = (order) => {
   const finalY = doc.lastAutoTable.finalY || 85;
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text(`Grand Total: Rs. ${Number(order.total).toFixed(2)}`, 140, finalY + 10);
+  doc.text(`Grand Total: Rs. ${parsePrice(order.total).toFixed(2)}`, 140, finalY + 10);
   
   // Payment Details
   doc.setFontSize(10);
