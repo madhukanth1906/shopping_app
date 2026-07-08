@@ -2,14 +2,42 @@ import "./globals.css";
 import { ToastProvider } from "@/components/ToastProvider";
 
 export const metadata = {
-  title: "Azhagii - Women's Dresses",
-  description: "Redefining modern elegance through curation and craftsmanship.",
+  title: {
+    default: "Azhagii - Premium Clothing & Sarees",
+    template: "%s | Azhagii"
+  },
+  description: "Discover Azhagii's collection of premium women's clothing, sarees, and modern elegance. Handcrafted designs for every occasion.",
+  keywords: ["Azhagii", "Sarees", "Women's Clothing", "Premium Dresses", "Ethnic Wear", "Indian Fashion"],
+  authors: [{ name: "Azhagii" }],
+  creator: "Azhagii",
+  openGraph: {
+    type: "website",
+    locale: "en_IN",
+    url: "https://www.azhagii.me",
+    siteName: "Azhagii",
+    title: "Azhagii - Premium Clothing & Sarees",
+    description: "Discover Azhagii's collection of premium women's clothing, sarees, and modern elegance.",
+    images: [
+      {
+        url: "https://www.azhagii.me/media__1783138121082.png", // Using one of their hero images
+        width: 1200,
+        height: 630,
+        alt: "Azhagii Collection",
+      }
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Azhagii - Premium Clothing & Sarees",
+    description: "Discover Azhagii's collection of premium women's clothing, sarees, and modern elegance.",
+  },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "Azhagii",
-  }
+  },
+  metadataBase: new URL("https://www.azhagii.me"),
 };
 
 export const viewport = {
