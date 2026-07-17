@@ -24,27 +24,27 @@ export default function Footer() {
         <div>
           <h4 className="font-bold uppercase text-[10px] tracking-[0.2em] mb-8 text-outline">Collections</h4>
           <ul className="space-y-4 text-sm text-on-surface-variant">
-            <li><Link className="hover:text-secondary transition-colors" href="/shop">New Arrivals</Link></li>
-            <li><Link className="hover:text-secondary transition-colors" href="/shop">Best Sellers</Link></li>
-            <li><Link className="hover:text-secondary transition-colors" href="/shop">The Archive</Link></li>
-            <li><Link className="hover:text-secondary transition-colors" href="/shop">Sustainability</Link></li>
+            <li><Link className="hover:text-secondary transition-colors" href="/shop?filter=new">New Arrivals</Link></li>
+            <li><Link className="hover:text-secondary transition-colors" href="/shop?filter=best-sellers">Best Sellers</Link></li>
+            <li><Link className="hover:text-secondary transition-colors" href="/shop?filter=archive">The Archive</Link></li>
+            <li><Link className="hover:text-secondary transition-colors" href="/sustainability">Sustainability</Link></li>
           </ul>
         </div>
         <div>
           <h4 className="font-bold uppercase text-[10px] tracking-[0.2em] mb-8 text-outline">Client Care</h4>
           <ul className="space-y-4 text-sm text-on-surface-variant">
-            <li><Link className="hover:text-secondary transition-colors" href="/shop">Shipping & Returns</Link></li>
-            <li><Link className="hover:text-secondary transition-colors" href="/shop">Size Guide</Link></li>
-            <li><Link className="hover:text-secondary transition-colors" href="/shop">Contact Us</Link></li>
-            <li><Link className="hover:text-secondary transition-colors" href="/shop">FAQ</Link></li>
+            <li><Link className="hover:text-secondary transition-colors" href="/shipping-returns">Shipping & Returns</Link></li>
+            <li><Link className="hover:text-secondary transition-colors" href="/size-guide">Size Guide</Link></li>
+            <li><a className="hover:text-secondary transition-colors" href="mailto:support@azhagii.me">Contact Us</a></li>
+            <li><Link className="hover:text-secondary transition-colors" href="/faq">FAQ</Link></li>
           </ul>
         </div>
         <div>
           <h4 className="font-bold uppercase text-[10px] tracking-[0.2em] mb-8 text-outline">Legal</h4>
           <ul className="space-y-4 text-sm text-on-surface-variant">
-            <li><Link className="hover:text-secondary transition-colors" href="/shop">Privacy Policy</Link></li>
-            <li><Link className="hover:text-secondary transition-colors" href="/shop">Terms of Service</Link></li>
-            <li><Link className="hover:text-secondary transition-colors" href="/shop">Cookies</Link></li>
+            <li><Link className="hover:text-secondary transition-colors" href="/privacy-policy">Privacy Policy</Link></li>
+            <li><Link className="hover:text-secondary transition-colors" href="/terms-of-service">Terms of Service</Link></li>
+            <li><Link className="hover:text-secondary transition-colors" href="/cookies">Cookies</Link></li>
           </ul>
         </div>
       </div>
