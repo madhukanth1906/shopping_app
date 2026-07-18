@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
+import ProductSkeleton from "@/components/ProductSkeleton";
 import { fetchProducts } from "@/lib/catalog";
 import { getUser } from "@/lib/auth";
 import { account } from "@/lib/appwrite";
@@ -39,6 +40,12 @@ function ShopContent() {
   const allCategories = Array.from(new Set(Object.values(products).map(p => p.category).filter(Boolean)));
 
   const [recentlyViewed, setRecentlyViewed] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const productsPerPage = 25;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedSizes, maxPrice, sortOption, selectedOccasions, selectedFabrics, selectedCategories, searchParam]);
 
   useEffect(() => {
     const loadRecentlyViewed = () => {
@@ -142,6 +149,9 @@ function ShopContent() {
   } else if (sortOption === "Popularity") {
     filteredProducts.sort((a, b) => a.name.localeCompare(b.name));
   }
+
+  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+  const paginatedProducts = filteredProducts.slice((currentPage - 1) * productsPerPage, currentPage * productsPerPage);
 
   return (
     <>
@@ -302,7 +312,7 @@ function ShopContent() {
           {/* Product Grid */}
           <div className="flex-grow z-0">
             <div className={viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-16 gap-x-8" : "flex flex-col gap-y-8"}>
-              {loading && <p className="text-outline text-sm col-span-full">Loading products...</p>}
+              {loading && Array.from({ length: 8 }).map((_, i) => <ProductSkeleton key={i} viewMode={viewMode} />)}
               
               {!loading && error && (
                 <div className="col-span-full bg-error-container/10 border border-error/30 p-6 rounded-lg flex items-start gap-4">
@@ -322,10 +332,39 @@ function ShopContent() {
               </div>
             )}
               
-              {!loading && !error && filteredProducts.map(product => (
+              {!loading && !error && paginatedProducts.map(product => (
                 <ProductCard key={product.id} product={product} viewMode={viewMode} isRecommended={preferredSize && product.inventory && product.inventory[preferredSize] > 0} />
               ))}
             </div>
+
+            {/* Pagination Controls */}
+            {!loading && !error && totalPages > 1 && (
+              <div className="mt-16 flex justify-center items-center gap-4">
+                <button 
+                  onClick={() => {
+                    setCurrentPage(prev => Math.max(prev - 1, 1));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 font-label uppercase tracking-widest text-[10px] border border-outline-variant hover:bg-surface-container transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-on-surface"
+                >
+                  Previous
+                </button>
+                <div className="font-label text-xs uppercase tracking-widest text-outline">
+                  Page {currentPage} of {totalPages}
+                </div>
+                <button 
+                  onClick={() => {
+                    setCurrentPage(prev => Math.min(prev + 1, totalPages));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 font-label uppercase tracking-widest text-[10px] border border-outline-variant hover:bg-surface-container transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-on-surface"
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
         </div>
         

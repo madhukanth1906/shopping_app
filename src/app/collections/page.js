@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { fetchProducts } from "@/lib/catalog";
+import ProductSkeleton from "@/components/ProductSkeleton";
 import Link from "next/link";
 import { ChevronRight, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -51,7 +52,28 @@ export default function Collections() {
           <p className="font-body text-outline max-w-xl leading-relaxed">Discover our elegant selections organized by category. Find the perfect aesthetic for your next occasion.</p>
         </div>
 
-        {loading && <p className="text-outline text-sm">Loading collections...</p>}
+        {loading && (
+          <div className="space-y-20">
+            {Array.from({ length: 2 }).map((_, idx) => (
+              <div key={`skel-cat-${idx}`} className="border-t border-outline-variant/10 pt-10 first:border-0 first:pt-0">
+                <div className="flex justify-between items-end mb-8">
+                  <div>
+                    <div className="h-10 w-48 bg-surface-container rounded mb-2 animate-pulse"></div>
+                    <div className="h-4 w-24 bg-surface-container rounded animate-pulse"></div>
+                  </div>
+                  <div className="h-5 w-16 bg-surface-container rounded animate-pulse"></div>
+                </div>
+                <div className="flex gap-8 overflow-x-auto hide-scrollbar pb-8 snap-x">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={`skel-${idx}-${i}`} className="min-w-[280px] w-[280px] md:min-w-[320px] md:w-[320px] snap-start">
+                      <ProductSkeleton viewMode="grid" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {!loading && categories.map(category => {
           const categoryProducts = Object.entries(products).filter(([id, p]) => p.category === category);

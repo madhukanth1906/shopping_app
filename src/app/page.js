@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
+import ProductSkeleton from "@/components/ProductSkeleton";
 import Link from "next/link";
 import { useToast } from "@/components/ToastProvider";
 import { fetchProducts } from "@/lib/catalog";
@@ -17,6 +18,10 @@ export default function Home() {
   const [featured, setFeatured] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [heroImages, setHeroImages] = useState({
+    desktop: "/assets/hero-saree-new.jpeg",
+    mobile: "/assets/hero-saree-mobile.jpeg"
+  });
 
   const handleNewsletter = (e) => {
     e.preventDefault();
@@ -27,6 +32,15 @@ export default function Home() {
   };
 
   useEffect(() => {
+    // Pick random images on mount to avoid hydration mismatch
+    const desktopImages = ["/assets/hero-saree-new.jpeg", "/assets/hero-saree-desktop-2.jpeg"];
+    const mobileImages = ["/assets/hero-saree-mobile.jpeg", "/assets/hero-saree-mobile-2.jpeg"];
+    
+    setHeroImages({
+      desktop: desktopImages[Math.floor(Math.random() * desktopImages.length)],
+      mobile: mobileImages[Math.floor(Math.random() * mobileImages.length)]
+    });
+
     async function load() {
       try {
         const allProducts = await fetchProducts();
@@ -43,24 +57,31 @@ export default function Home() {
   return (
     <>
       <Navbar />
-      <main className="pt-0">
+      <main className="pt-24 md:pt-28">
         {/* Hero Section */}
-        <section className="relative h-screen min-h-[700px] w-full overflow-hidden flex items-center justify-center">
+        <section className="relative h-[85vh] min-h-[600px] w-full overflow-hidden flex items-center">
           <div className="absolute inset-0 z-0">
-            <img className="w-full h-full object-cover" alt="Editorial fashion shot" src="/assets/hero-saree.png" />
-            <div className="absolute inset-0 bg-on-background/10"></div>
+            <img className="hidden md:block w-full h-full object-cover object-[right_top]" alt="Editorial fashion shot" src={heroImages.desktop} />
+            <img className="block md:hidden w-full h-full object-cover object-top" alt="Editorial fashion shot mobile" src={heroImages.mobile} />
+            <div className="absolute inset-0 bg-gradient-to-r from-surface/90 via-surface/40 to-transparent"></div>
           </div>
-          <div className="relative z-10 text-center max-w-4xl px-6">
-            <h1 className="font-headline italic text-5xl md:text-7xl lg:text-[100px] leading-none text-white mb-8 tracking-tighter drop-shadow-sm">
-              Elegant Dresses for Every Occasion
-            </h1>
-            <div className="flex flex-col md:flex-row gap-4 justify-center items-center">
-              <Link href="/shop" className="bg-on-surface text-surface px-10 py-4 rounded-full font-label uppercase tracking-widest text-xs hover:bg-secondary transition-all transform hover:scale-105 inline-block text-center">
-                Shop Now
-              </Link>
-              <Link href="/shop?filter=new" className="bg-surface/20 backdrop-blur-md text-white border border-white/30 px-10 py-4 rounded-full font-label uppercase tracking-widest text-xs hover:bg-white hover:text-on-surface transition-all transform hover:scale-105 inline-block text-center">
-                New Arrivals
-              </Link>
+          <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-12 w-full">
+            <div className="max-w-xl">
+              <span className="font-label uppercase tracking-[0.2em] text-[10px] text-primary block mb-6">New Collection</span>
+              <h1 className="font-headline italic text-5xl md:text-6xl lg:text-[80px] leading-tight text-on-surface mb-8 tracking-tighter drop-shadow-sm">
+                Elegant Dresses for Every Occasion
+              </h1>
+              <p className="font-body text-on-surface-variant mb-12 text-lg leading-relaxed drop-shadow-sm">
+                Discover our curated collection of timeless silhouettes designed for the modern aesthetic. Hand-crafted with luxurious, sustainably sourced materials.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link href="/shop" className="bg-on-surface text-surface px-10 py-4 font-label uppercase tracking-widest text-[10px] hover:bg-secondary transition-all text-center backdrop-blur-sm">
+                  Shop Now
+                </Link>
+                <Link href="/shop?filter=new" className="bg-surface/50 backdrop-blur-md border border-outline-variant px-10 py-4 font-label uppercase tracking-widest text-[10px] text-on-surface hover:bg-surface-container transition-all text-center">
+                  New Arrivals
+                </Link>
+              </div>
             </div>
           </div>
         </section>
@@ -120,7 +141,11 @@ export default function Home() {
             </div>
 
             <div className="flex gap-8 overflow-x-auto hide-scrollbar pb-8 snap-x">
-              {loading && <p className="text-outline text-sm">Loading products...</p>}
+              {loading && Array.from({ length: 4 }).map((_, i) => (
+                <div key={`skeleton-${i}`} className="min-w-[320px] w-[320px] max-w-[320px] snap-start">
+                  <ProductSkeleton viewMode="grid" />
+                </div>
+              ))}
               {!loading && featured.length === 0 && <p className="text-outline text-sm">No products available at the moment. Please check back later!</p>}
               {!loading && featured.map(([id, product]) => (
                 <div key={id} className="min-w-[320px] w-[320px] max-w-[320px] snap-start">
