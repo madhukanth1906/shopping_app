@@ -288,14 +288,33 @@ export default function Account() {
 
   if (loading) {
     return (
-      <div className="bg-background min-h-screen">
+      <div className="bg-[#FAFAFA] min-h-screen flex flex-col font-body">
         <Navbar />
-        <main className="pt-32 pb-20 px-6 md:px-12 flex justify-center">
-            <p className="text-outline text-sm uppercase tracking-widest font-label">Loading Dashboard...</p>
-  
-        
-
-      </main>
+        <main className="pt-32 pb-20 px-6 md:px-12 max-w-[1440px] mx-auto flex flex-col gap-12 flex-grow w-full">
+          <div className="w-full flex flex-col lg:flex-row gap-12 lg:gap-24 relative animate-pulse">
+             <aside className="hidden lg:flex w-64 flex-col gap-10 shrink-0">
+                <div className="flex items-center gap-4 pb-10 border-b border-outline-variant/10">
+                   <div className="w-12 h-12 rounded-full bg-surface-container"></div>
+                   <div className="space-y-2">
+                      <div className="h-4 w-24 bg-surface-container rounded"></div>
+                      <div className="h-2 w-16 bg-surface-container rounded"></div>
+                   </div>
+                </div>
+                <div className="space-y-4">
+                   {Array.from({ length: 5 }).map((_, i) => (
+                     <div key={i} className="h-10 w-full bg-surface-container rounded-lg"></div>
+                   ))}
+                </div>
+             </aside>
+             <div className="flex-grow w-full space-y-12 pt-4">
+                <div className="h-32 w-full bg-surface-container rounded-2xl"></div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   <div className="h-48 bg-surface-container rounded-2xl"></div>
+                   <div className="h-48 bg-surface-container rounded-2xl"></div>
+                </div>
+             </div>
+          </div>
+        </main>
         <Footer />
       </div>
     );
@@ -457,7 +476,31 @@ export default function Account() {
       <Navbar />
       
       <main className="pt-32 pb-20 px-6 md:px-12 max-w-[1440px] mx-auto flex flex-col gap-12 flex-grow w-full">
-        {!user ? (
+        {loading ? (
+          <div className="w-full flex flex-col lg:flex-row gap-12 lg:gap-24 relative animate-pulse">
+             <aside className="hidden lg:flex w-64 flex-col gap-10 shrink-0">
+                <div className="flex items-center gap-4 pb-10 border-b border-outline-variant/10">
+                   <div className="w-12 h-12 rounded-full bg-surface-container"></div>
+                   <div className="space-y-2">
+                      <div className="h-4 w-24 bg-surface-container rounded"></div>
+                      <div className="h-2 w-16 bg-surface-container rounded"></div>
+                   </div>
+                </div>
+                <div className="space-y-4">
+                   {Array.from({ length: 5 }).map((_, i) => (
+                     <div key={i} className="h-10 w-full bg-surface-container rounded-lg"></div>
+                   ))}
+                </div>
+             </aside>
+             <div className="flex-grow w-full space-y-12 pt-4">
+                <div className="h-32 w-full bg-surface-container rounded-2xl"></div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   <div className="h-48 bg-surface-container rounded-2xl"></div>
+                   <div className="h-48 bg-surface-container rounded-2xl"></div>
+                </div>
+             </div>
+          </div>
+        ) : !user ? (
           <div className="w-full flex flex-col items-center justify-center flex-grow text-center py-20 space-y-8">
             <h1 className="text-5xl md:text-6xl font-headline tracking-tight text-on-surface mb-8">Welcome to <span className="italic">Azhagii</span></h1>
             <button onClick={loginWithGoogle} className="bg-on-surface text-surface px-8 py-4 rounded-full text-sm font-bold uppercase tracking-widest hover:bg-secondary transition-all">Continue with Google</button>

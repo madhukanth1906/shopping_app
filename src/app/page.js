@@ -59,22 +59,29 @@ export default function Home() {
       <Navbar />
       <main className="pt-24 md:pt-28">
         {/* Hero Section */}
-        <section className="relative h-[85vh] min-h-[600px] w-full overflow-hidden flex items-center">
+        <section className="relative h-[85vh] min-h-[600px] w-full overflow-hidden block md:flex md:items-center">
           <div className="absolute inset-0 z-0">
             <img className="hidden md:block w-full h-full object-cover object-[right_top]" alt="Editorial fashion shot" src={heroImages.desktop} />
             <img className="block md:hidden w-full h-full object-cover object-top" alt="Editorial fashion shot mobile" src={heroImages.mobile} />
-            <div className="absolute inset-0 bg-gradient-to-r from-surface/90 via-surface/40 to-transparent"></div>
+            
+            {/* Desktop Gradient */}
+            <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-surface/90 via-surface/40 to-transparent"></div>
+            
+            {/* Mobile Gradient */}
+            <div className="block md:hidden absolute inset-x-0 top-0 h-[70%] bg-gradient-to-b from-surface via-surface/80 to-transparent"></div>
           </div>
-          <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-12 w-full">
-            <div className="max-w-xl">
-              <span className="font-label uppercase tracking-[0.2em] text-[10px] text-primary block mb-6">New Collection</span>
-              <h1 className="font-headline italic text-5xl md:text-6xl lg:text-[80px] leading-tight text-on-surface mb-8 tracking-tighter drop-shadow-sm">
-                Elegant Dresses for Every Occasion
-              </h1>
-              <p className="font-body text-on-surface-variant mb-12 text-lg leading-relaxed drop-shadow-sm">
-                Discover our curated collection of timeless silhouettes designed for the modern aesthetic. Hand-crafted with luxurious, sustainably sourced materials.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-12 w-full h-full pt-10 md:pt-0">
+            <div className="max-w-xl pb-10 md:pb-0">
+              <div>
+                <span className="font-label uppercase tracking-[0.2em] text-[10px] text-primary block mb-6">New Collection</span>
+                <h1 className="font-headline italic text-5xl md:text-6xl lg:text-[80px] leading-tight text-on-surface mb-8 tracking-tighter drop-shadow-sm">
+                  Elegant Dresses for Every Occasion
+                </h1>
+                <p className="hidden md:block font-body text-on-surface-variant mb-12 text-lg leading-relaxed drop-shadow-sm">
+                  Discover our curated collection of timeless silhouettes designed for the modern aesthetic. Hand-crafted with luxurious, sustainably sourced materials.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-4 absolute bottom-12 left-6 right-6 md:static md:bottom-auto md:left-auto md:right-auto md:mt-10">
                 <Link href="/shop" className="bg-on-surface text-surface px-10 py-4 font-label uppercase tracking-widest text-[10px] hover:bg-secondary transition-all text-center backdrop-blur-sm">
                   Shop Now
                 </Link>
